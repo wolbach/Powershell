@@ -8,12 +8,14 @@ $clu = Read-Host "Welches Cluster updaten?"
 $clunodes = Get-ClusterNode -Cluster $clu
 
 foreach ($clunode in $clunodes) {
+    
     Suspend-ClusterNode -TargetNode $clunode -Cluster $clu -Drain
     Write-Host "Knoten $clunode wurde pausiert"
 
     Get-WindowsUpdate -ComputerName $clunode
-    $conf = Read-Host "Mit Updates fortfahren?"
+    $conf = Read-Host "Mit Updates fortfahren? y/n"
 
+    if ($conf -eq "y"){
     try {
     Download-WindowsUpdate -ComputerName $clunode -AcceptAll
     Install-WindowsUpdate -ComputerName $clunode -AcceptAll
@@ -26,9 +28,13 @@ foreach ($clunode in $clunodes) {
     Resume-ClusterNode -TargetNode $clunode -Cluster $clu
     Write-Host "Knoten $clunode fortgesetzt"
 
-        $volstate = Get-ClusterSharedVolume -Cluster $clu
+        $cluvol = Get-ClusterSharedVolume -Cluster $clu
+    
+        # Vorerst ein Sleep von 16h, sollte durch etwas eleganteres ersetzt werden; Wird wegen Rebuild gemacht
+        sleep -s 57.600
 
-    if ($volstate.State -eq ){
-
+    } elseif ($conf -eq "n") {}
+    else {
+        Write-Host "Ungültige Eingabe"
     }
 }
