@@ -1,5 +1,7 @@
 <#
 Skript für zusammenführung von allen Lizenzverwaltungsskripten
+
+v1.0 Einfügen der Funktion zum ändern der Lizenz von Standard auf Basic oder Wegnahme
 #>
 
 if (-not(Get-Module ActiveDirectory))
@@ -9,43 +11,50 @@ Connect-MsolService
 
 $Gruppe = $null
 $Members = $null
-$UPN = $null
+
+$count = 0
 
 $Gruppe = Read-Host "Bitte Kursnamen angeben"
 $Members = Get-ADGroupMember $Gruppe -Server "training.lug-ag.de"
 
+$lizis = $Members | measure
+$lizan = $lizis.Count
+$UPN = $null
+
 foreach ($Member in $Members){
+$UPN = $Member.samaccountname + ("@training.lug-ag.de")
+$Membi = Get-MsolUser -UserPrincipalName $UPN
 
-$Membi = Get-MsolUser -UserPrincipalName ($Member.samaccountname + "@training.lug-ag.de")
-
-Write-Host $Membi.DisplayName   ($Membi.licenses).AccountSkuId 
-$UPN += $Membi.DisplayName
+Write-Host $Membi.DisplayName:
+   ($Membi.licenses).AccountSkuID
 }
 
-$do = Read-Host "
+Read-Host "
 
 Was soll getan werden?
 
 1 = Standard auf Basic-Lizenz
 2 = Lizenzen wegnehmen
+3 = Basic auf Standard (nicht fertig)
 (Nichts angeben: Abbrechen)
 "
 
 if ($do -eq 1) {
-    Standard-to-Basic -Gruppe $Gruppe -Members $Members
+    Standard-to-Basic -Gruppe $Gruppe -Members $Members -UPN $UPN
 } elseif ($do -eq 2) {
     Wegnehmen
-}elseif ($do -eq 3) {
-    <# Action when this condition is true #>
-}elseif ($do -eq 4) {
-    <#condition#>
+}elseif ($do -eq 3){
+    Basic-to-Standard
+}else {
+    Write-Host "Ungültige Eingabe"
 }
 
 # Funktionen
 function Standard-to-Basic {
     param (
         $Members,
-        $Gruppe
+        $Gruppe,
+        $UPN
     )
     $a = $null
     $zahl = $null
@@ -68,7 +77,7 @@ Foreach($Member in $Members){
     $ErrorActionPreference = "SilentlyContinue"
     while ($null -eq $a) {
         Sleep 60
-        $a = Get-MsolUser -UserPrincipalName $UPN
+        $a = Get-MsolUser -UserPrincipalName $Member.UserPrincipalName
         [int]$Zahl = $Zahl + 1
       }
 
@@ -79,10 +88,10 @@ Foreach($Member in $Members){
 
 
     ### Lizenzen verwalten
-    Set-MsolUser -UserPrincipalName $UPN -UsageLocation DE
-    Set-MsolUserLicense -UserPrincipalName $UPN -RemoveLicenses "reseller-account:O365_BUSINESS_PREMIUM"
+    Set-MsolUser -UserPrincipalName $Member.UserPrincipalName -UsageLocation DE
+    Set-MsolUserLicense -UserPrincipalName $Member.UserPrincipalName -RemoveLicenses "reseller-account:O365_BUSINESS_PREMIUM"
     Sleep -Seconds 3
-    Set-MsolUserLicense -UserPrincipalName $UPN -AddLicenses "reseller-account:O365_BUSINESS_ESSENTIALS"
+    Set-MsolUserLicense -UserPrincipalName $Member.UserPrincipalName -AddLicenses "reseller-account:O365_BUSINESS_ESSENTIALS"
 }
 }
 
@@ -95,7 +104,7 @@ echo "warten auf Office 365 Sync in min (Kann bis zu 35min Dauern)"
 Foreach($Member in $Members){
 
 
-$UPN = $Member.samaccountname + "@training.lug-ag.de"
+#$UPN = $Member.samaccountname + "@training.lug-ag.de"
 
 $ErrorActionPreference = "SilentlyContinue"
 while ($null -eq $a) {
@@ -125,7 +134,7 @@ Write-Host "Benutzer $UPN bearbeitet"
     Foreach($Member in $Members){
     
     
-    $UPN = $Member.samaccountname + "@training.lug-ag.de"
+    #$UPN = $Member.samaccountname + "@training.lug-ag.de"
     
     $ErrorActionPreference = "SilentlyContinue"
     while ($null -eq $a) {
@@ -148,7 +157,7 @@ Write-Host "Benutzer $UPN bearbeitet"
     Sleep -Seconds 3
     #Set-MsolUserLicense -UserPrincipalName $UPN -AddLicenses "reseller-account:TEAMS_COMMERCIAL_TRIAL"
     
-    Write-Host "Benutzer $Membi bearbeitet"    
+    Write-Host "Benutzer "$Member.DisplayName "bearbeitet"    
 
 }
 }
