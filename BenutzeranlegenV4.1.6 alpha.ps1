@@ -90,8 +90,6 @@ $MyVMM = $null
 $dauer = $null
 $dauerpruef = $null
 $Benutzername = $null
-$memgrp = $null
-$memgrp2= $null
 $exportdatei = $null
 $pw = $null
 $pwgen = $null
@@ -518,7 +516,7 @@ Foreach($user in $Users){
         sleep -Seconds 90
     }
 
-    if($pfad -ne $null){
+    if($null -ne $pfad){
         Homelaufwerkgen -cuVorname $CUVorname -cuNachname $CUNachname -pfad $pfad
     }
 

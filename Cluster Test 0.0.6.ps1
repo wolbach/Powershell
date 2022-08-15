@@ -26,7 +26,19 @@ if ($clustertest -eq "y"){
 } elseif ($clustertest -ne "y") {
     Get-ResultFile
 }
+[xml]$Test = Get-Content -Path 'C:\Users\marku\OneDrive\PS Gedöhnse\Validierungsbericht 2022.02.21 At 12.02.21.xml'
+$content = $Test.Report.Channel.InnerText
 
+foreach ($1content in $content) {
+
+    
+
+    if ($1content  "Warnung") {
+       # Out-File -FilePath ../test.txt -Encoding utf8 -InputObject $1content
+       Write-Host $1content
+    }
+
+}
 
 
 # Funktionen
@@ -74,7 +86,6 @@ $Err = Get-ClusterValidationResult -Status 'Failed'
  
 Write-Host $Warning
 
-[xml]$Test = Get-Content -Path 'C:\Users\marku\OneDrive\PS Gedöhnse\Validierungsbericht 2022.02.21 At 12.02.21.xml'
 Export-Csv -InputObject $Test.InnerXml.Replace(">",";") -Path 'C:\Users\marku\OneDrive\PS Gedöhnse\Test.csv'
 
 $Test.InnerXml.Replace("<",";") | Out-File "C:\Users\marku\OneDrive\PS Gedöhnse\Testi.csv" -Encoding xml
