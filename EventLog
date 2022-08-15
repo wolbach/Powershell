@@ -1,0 +1,27 @@
+$Dienst = Read-Host "Nach welchen Typ soll gesucht werden? (AD,RDS,SQL)"
+
+if ($Dienst -eq "ad") {
+    $Dienst = "ActiveDirectory"
+}elseif ($Dienst -eq "rds") {
+    $Dienst =  "Remotedesktopdienste"
+}elseif ($Dienst -eq "SQL") {
+    $Dienst = "SQL"
+}else {
+    Writ-Host "Falsche Eingabe!"
+    $Dienst = $null
+}
+
+$Type = Read-Host "Fehler/Warnung oder Informationen?"
+$remcomp = Read-Host "Von Remote-Computer auslesen? (y/n)"
+
+if ($remcomp -eq "y") {
+    $comp = Read-Host "Wie ist der Name des Computers?"
+}else {
+    $comp = HOSTNAME.EXE
+}
+
+$Logs = @(Get-EventLog -ComputerName $comp -EntryType $Type -Source $Dienst)
+
+foreach ($Log in $Logs) {
+    Out-File -FilePath ./Logs-$comp.txt -Encoding utf8 -InputObject $Log
+}
