@@ -33,7 +33,9 @@ foreach ($clunode in $clunodes) {
         # Vorerst ein Sleep von 16h, sollte durch etwas eleganteres ersetzt werden; Wird wegen Rebuild gemacht
         sleep -s 57.600
 
-    } elseif ($conf -eq "n") {}
+    } elseif ($conf -eq "n") {
+        
+    }
     else {
         Write-Host "Ungültige Eingabe"
     }
