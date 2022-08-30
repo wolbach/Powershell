@@ -20,26 +20,58 @@ $LogName = Read-Host "Art des Logs?"
 $Type = Read-Host "Fehler/Warnung oder Informationen?"
 $remcomp = Read-Host "Von Remote-Computer auslesen? (y/n)"
 
+$Date = Get-Date -Format "DD.MM.YYYY"
+$exportdatei = "C:\temp\Events.csv"
+
+if(-not(Get-ChildItem $exportdatei -ErrorAction Ignore)){
+    Export-Csv -LiteralPath $exportdatei -Delimiter ";" -Encoding UTF8 -InputObject "ID;Time;Source;Message" 
+    }else{
+        Write-Error -Message "Datei existiert schon. Bitte zuerst löschen!" 
+    }
+
 if ($remcomp -eq "y") {
-    $comp = Read-Host "Wie ist der Name des Computers?"
+    $comp = Read-Host "Wie ist der Name des Computers?" 
 }else {
     $comp = HOSTNAME.EXE
 }
+Write-Output -InputObject "Der Computername ist: $comp
+Es wird nach $Type gesucht
+Kategorie ist: $LogName"
 
 $Logs = @(Get-EventLog -ComputerName $comp -EntryType $Type -LogName $LogName -Source $Dienst)
 
 foreach ($Log in $Logs) {
 
-    Track-Progress -Message "Erstellen der Log-Datei" -StepNumber ($Prog++)
-    $Log | Out-File -FilePath ./test.txt
+    $ID = $Log.EventID
+    $Source = $Log.Source
+    $Desc = $Log.Message
+    $EventTime = $Log.TimeWritten
+    
+    $Event = "$ID;$EventTime;$Source;$Desc"
+
+    $Event >> $exportdatei
+    
 }
 
-function Track-Progress {
-    param(
-        [int]$StepNumber,
-        [string]$Message
-    )
-    $script:steps = ([System.Management.Automation.PsParser]::Tokenize((gc "$PSScriptRoot\$($MyInvocation.MyCommand.Name)"), [ref]$null) | where { $_.Type -eq 'Command' -and $_.Content -eq 'Track-Progress' }).Count
+    ## Funktionen
+<#function Track-Progress {
+        param (
+            $StepNumber
+            $Message
+        )
+        $steps = ([System.Management.Automation.PsParser]::Tokenize((gc "$PSScriptRoot\$($MyInvocation.MyCommand.Name)"), [ref]$null) | where { $_.Type -eq 'Command' -and $_.Content -eq 'Write-Progress' }).Count
     
-    Write-Progress -Activity 'Title' -Status $Message -PercentComplete (($StepNumber / $steps) * 100)
+        Write-Progress -Activity $Message -PercentComplete (($StepNumber / $steps) * 100)
+    }#>
+function Try-Catch {
+    param (
+        $try
+    )
+   
+    try {
+        $try
+    }
+    catch {
+        Write-Error "Etwas ist schiefgelaufen"
+    }
 }
