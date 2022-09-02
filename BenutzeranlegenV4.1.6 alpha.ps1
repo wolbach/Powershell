@@ -43,7 +43,7 @@ ToDo:
 -   VMM-Rollenerstellung anpassen --> Zuweisen von Admin-Rollen für Trainer u. Co
 -   Add-TeamUser überarbeiten /wg ganzes Team wird hinzugefügt 
 
--   UI-Implementierung
+-   UI-Implementierung --> ongoing
 
 #>
 

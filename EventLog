@@ -1,77 +1,48 @@
-$Prog = 0;
-
-$Dienst = Read-Host "Nach welchen Typ soll gesucht werden? (AD,RDS,SQL)"
-
-<# if ($Dienst -eq "ad") {
-    $Dienst = "ActiveDirectory"
-}
-elseif ($Dienst -eq "rds") {
-    $Dienst = "Remotedesktopdienste"
-}
-elseif ($Dienst -eq "SQL") {
-    $Dienst = "SQL"
-}
-else {
-    Writ-Host "Falsche Eingabe!"
-    $Dienst = $null
-} #>
-
-$LogName = Read-Host "Art des Logs?"
-$Type = Read-Host "Fehler/Warnung oder Informationen?"
+$Timegoal = Read-Host "Bitte frühestes Logdatum angeben (TT/MM/JJJJ)"
+$Type = Read-Host "Error(e) Warning(w) oder Informations(i)?"
 $remcomp = Read-Host "Von Remote-Computer auslesen? (y/n)"
 
-$Date = Get-Date -Format "DD.MM.YYYY"
+$Date = Get-Date -Format "JJJJ/MM/TT"
 $exportdatei = "C:\temp\Events.csv"
 
 if(-not(Get-ChildItem $exportdatei -ErrorAction Ignore)){
-    Export-Csv -LiteralPath $exportdatei -Delimiter ";" -Encoding UTF8 -InputObject "ID;Time;Source;Message" 
+    Export-Csv -LiteralPath $exportdatei -Delimiter ";" -Encoding UTF8
+    #";;;;Der Computername ist: $comp;Es wird nach $Type gesucht;Kategorie ist: $LogName" >> $exportdatei
+    "ID;Time;Source;Message" >> $exportdatei
     }else{
-        Write-Error -Message "Datei existiert schon. Bitte zuerst löschen!" 
-    }
+        Write-Error -Message "Datei existiert schon: Bitte zuerst löschen!" 
+        return
+}
+
+switch ($Type) {
+    $Type -eq "w" { $Type = "Warning" }
+    $Type -eq "e" { $Type = "Error" }
+    $Type -eq "i" { $Type = "Information" }
+    Default { Write-Error -Message "Falsche Eingabe: Bitte eine valide Eingabe machen!"
+        return }
+}
 
 if ($remcomp -eq "y") {
     $comp = Read-Host "Wie ist der Name des Computers?" 
 }else {
     $comp = HOSTNAME.EXE
 }
-Write-Output -InputObject "Der Computername ist: $comp
-Es wird nach $Type gesucht
-Kategorie ist: $LogName"
 
-$Logs = @(Get-EventLog -ComputerName $comp -EntryType $Type -LogName $LogName -Source $Dienst)
+$Logs = @(Get-WinEvent -ComputerName $comp | where LevelDisplayName -eq $Type)
 
-foreach ($Log in $Logs) {
+$Logs | Foreach-Object -ThrottleLimit 10 -Parallel {
 
-    $ID = $Log.EventID
-    $Source = $Log.Source
+    #if ($Timegoal -eq ) {
+        <# Action to perform if the condition is true #>
+    #}
+
+    $ID = $Log.ID
+    $Source = $Log.ProviderName 
     $Desc = $Log.Message
-    $EventTime = $Log.TimeWritten
+    $EventTime = $Log.TimeCreated
     
     $Event = "$ID;$EventTime;$Source;$Desc"
 
     $Event >> $exportdatei
     
-}
-
-    ## Funktionen
-<#function Track-Progress {
-        param (
-            $StepNumber
-            $Message
-        )
-        $steps = ([System.Management.Automation.PsParser]::Tokenize((gc "$PSScriptRoot\$($MyInvocation.MyCommand.Name)"), [ref]$null) | where { $_.Type -eq 'Command' -and $_.Content -eq 'Write-Progress' }).Count
-    
-        Write-Progress -Activity $Message -PercentComplete (($StepNumber / $steps) * 100)
-    }#>
-function Try-Catch {
-    param (
-        $try
-    )
-   
-    try {
-        $try
-    }
-    catch {
-        Write-Error "Etwas ist schiefgelaufen"
-    }
 }
