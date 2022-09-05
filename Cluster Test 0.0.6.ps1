@@ -33,7 +33,7 @@ foreach ($1content in $content) {
 
     
 
-    if ($1content          "Warnung") {
+    if ($1content "Warnung") {
        # Out-File -FilePath ../test.txt -Encoding utf8 -InputObject $1content
        Write-Host $1content
     }
