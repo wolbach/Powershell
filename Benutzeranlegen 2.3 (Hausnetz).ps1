@@ -15,8 +15,6 @@
     <#
     ToDo
 
-    Aufräumen von Variablen
-    Ausbauen von Zeiterfassungszeug (AUFPASSEN WEGEN LGLIEFERANT CO)
     Anpassung der zugewiesenen Gruppenmitgliedschaften
     Anredegedöhns anders machen
     Lizenzname überprüfen
@@ -47,7 +45,6 @@
  $abteilung = $null
  $dis = $null
  $OU = 'OU=LutzundGrub,OU=Benutzer,DC=lg,DC=local,DC=de'
- $Benutzer = $null
  $driveletter = "Z:"
  $acl = $null
  $fileSystemRights = [System.Security.AccessControl.FileSystemRights]"Modify"
@@ -57,18 +54,11 @@
  $homeshare = $null
  $accessrule = $null
  $user = $null
- $credential = $null
  $LO = $null
- $credential = $null
  $aktiv = $null
  $ablaufdatum = $null
- $Wochenstunden = $null
- $Urlaubstage = $null
- $Eintrittsdatum =$null
  $anrede = $null
  $daimler = $null
- $zuganglief = $null
- $insertquery = $null
  $insertquery2 = $null
  
  
@@ -207,44 +197,6 @@
      }
  }
  
- 
- 
- ######## Aufwandserfassung
- 
-     
- $insertquery="
- 
- 
- 
- BEGIN
-     DECLARE @PersonenID int
-     DECLARE @MitarbeiterID int
-     DECLARE @smalldatetime smalldatetime = '$start'; 
- 
- 
-     INSERT INTO [LGCRM].[dbo].[Personen] (Name,Vorname,AnredeID)
-         VALUES ('$Nachname','$Vorname','$anrede')
-     SELECT @PersonenID = max(PersonenID) FROM [LGCRM].[dbo].Personen WHERE Name='$Nachname' and Vorname='$Vorname'
- 
-     INSERT INTO [LGCRM].[dbo].[Mitarbeiter]	(PersonenID,FirmenID,Eintrittsdatum,[Ansprechpartnertyp],[PositionID],[AbteilungID],[Vorgesetzter]
-         ,[Keine_Werbe_Email],[Keine_Mailings])
-         VALUES (@PersonenID,5586,@smalldatetime,1,1,1,0,0,0)
-     SELECT @MitarbeiterID = MitarbeiterID FROM [LGCRM].[dbo].Mitarbeiter WHERE PersonenID=@PersonenID and FirmenID=5586
- 
-      INSERT INTO [LGCRM].[dbo].[Einstellung] ([MitarbeiterID],[Anmeldename],[EinstellungenAendern],[LGStandortID],[LGBereichID],[Inaktiv])
-         VALUES (@MitarbeiterID,'$Benutzername',0,1,1,0)
- 
-     
-     INSERT INTO [LGAufwand_v2].[dbo].[MitarbeiterEinstellungen] ([MitarbeiterID],[Jahresurlaub],[Wochenstunden],[Berechtigung],[Daimler-Support])
-     VALUES(@MitarbeiterID,'$Urlaubstage','$Wochenstunden',1,'$Daimlersupport')
- 
-     INSERT INTO [LGAufwand_v2].[dbo].[Monatswerte] ([MitarbeiterID],[Monat],[Überstunden],[Resturlaub],[Abgleich])
-     VALUES(@MitarbeiterID,'$Monatsanfang',0,'$Urlaubstage',NULL)
-     
- END
- "
- Invoke-Sqlcmd -ServerInstance lgka-sql010 -Database LGCRM -DisableVariables -Query $insertquery
- 
  ####### Lieferantenmanagement
  
  if($abteilung -eq "5" -or $abteilung -eq "6" -or $abteilung -eq "9" -or $abteilung -eq "10" ){
@@ -366,12 +318,13 @@
  $ErrorActionPreference = "SilentlyContinue"
  Add-DistributionGroupMember -Identity "LG-Ankündigung" -Member "$Benutzername@lutzundgrub.de"
  Remove-PSSession $exchangeSession
- 
+ ## Funktioniert nicht so wie es sollte
  
  ### Lizenzen verwalten
  $LO = New-MsolLicenseOptions -AccountSkuId "lutzundgrub:ENTERPRISEPACK"
  Set-MsolUser -UserPrincipalName "$Benutzername@lutzundgrub.de" -UsageLocation DE
  Set-MsolUserLicense -UserPrincipalName $Benutzername@lutzundgrub.de -AddLicenses "lutzundgrub:SPE_E3" -LicenseOptions $LO
+ ## Überprüfen, ob Lizenz AccountSkuID noch richtig ist
  
  
  #### Benutzer ablaufen
@@ -399,11 +352,9 @@
  $b
 
 BENUTZER ERSTELLEN ERFOLGREICH!"
+## Mit try catch realisieren?
  
  $credential = $null
  "Zum Abschluss Mail Migration nach O365 + ggf. Login für Teilnehmerdatenbank + Sharepoint Gruppe LG-Ankündigung"
- 
- 
- 
- Start-Sleep -s 30
+ ## Nach Automatisierungslösungen suchen
   

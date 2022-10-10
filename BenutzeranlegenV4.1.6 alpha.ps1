@@ -38,12 +38,7 @@ V4.1.5 Gruppenexistenz-Prüfung hinzugefügt + Abfrage nach Trainerrechten, Anpa
 
 ToDo:
 
--   entfernen von abfrage nach sgb oder firmenkunden
--   Exception für Gruppenwarnung einbauen
--   VMM-Rollenerstellung anpassen --> Zuweisen von Admin-Rollen für Trainer u. Co
--   Add-TeamUser überarbeiten /wg ganzes Team wird hinzugefügt 
-
--   UI-Implementierung --> ongoing
+!!Volle Überarbeitung für neue Academy Domäne!!
 
 #>
 
