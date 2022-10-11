@@ -2,6 +2,10 @@
 Skript für zusammenführung von allen Lizenzverwaltungsskripten
 
 v1.0 Einfügen der Funktion zum ändern der Lizenz von Standard auf Basic oder Wegnahme
+
+ToDO:
+
+Hinzufügen von Lizenzen wen unlizenziert
 #>
 
 if (-not(Get-Module ActiveDirectory))
@@ -12,7 +16,6 @@ Connect-MsolService
 $Gruppe = $null
 $Members = $null
 
-$count = 0
 
 $Gruppe = Read-Host "Bitte Kursnamen angeben"
 $Members = Get-ADGroupMember $Gruppe -Server "training.lug-ag.de"
@@ -34,10 +37,10 @@ Read-Host "
 Was soll getan werden?
 
 1 = Standard auf Basic-Lizenz
-2 = Lizenzen wegnehmen
+2 = Lizenzen wegnehmen 
 3 = Basic auf Standard (nicht fertig)
 (Nichts angeben: Abbrechen)
-"
+"## Verschieben von wegnehmen
 
 if ($do -eq 1) {
     Standard-to-Basic -Gruppe $Gruppe -Members $Members -UPN $UPN

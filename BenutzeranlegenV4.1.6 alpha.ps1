@@ -61,7 +61,7 @@ if (-not(Get-Module msonline))
 
 ###Variablen deklarieren
 
-$Users = Import-Csv C:\skripts\user.csv -Delimiter ";" -Encoding UTF8
+$Users = Import-Csv C:\skripte\user.csv -Delimiter ";" -Encoding UTF8
 $lizis = $null
 $lizan = $null
 $lizis = $Users | Measure-Object
@@ -114,7 +114,7 @@ while($LizenzAbfrage -ne "y"){
     Es werden mindestens $lizan Lizenzen benötigt! [y/n]"
 }
 
-Write-Host "training.lug-ag.de MS365 Admin eingeben"
+Write-Host "academy.local MS365 Admin eingeben"
 Connect-MsolService
 Connect-MicrosoftTeams
 
@@ -164,7 +164,7 @@ while($Standort  -ne "hn" -and $Standort -ne "ka" -and $Standort -ne "nbg" -and 
 
             if($Standort -eq "ka"){
 
-            $pfad = "\\awfs01\Homelaufwerk"
+            $pfad = "\\awfs01\Homelaufwerk" ## an neuen fileserver anpassen ##
             $KLpfad= "\\awfs01\Kursfreigaben"
 
             }
@@ -265,20 +265,20 @@ while($Seminartyp -ne "s" -and $Seminartyp -ne "f"){
     }
 
     if($Seminartyp -ne "s" -and $Seminartyp -ne "f"){
-        Write-Host "Bitte s oder f eingeben"
+        Write-Host "Bitte s oder f eingeben" ## ?? Firmenschulungen weg ?? ##
         }
 }
             if($Seminartyp -eq "s"){
-            $OU = 'OU=SGB3,OU=Teilnehmer,OU=Training,DC=training,DC=lug-ag,DC=de'
-            $OUGroup = 'OU=Kurs,OU=Gruppen,OU=Training,DC=training,DC=lug-ag,DC=de'
+            $OU = 'OU=SGB3,OU=Teilnehmer,OU=academy,DC=academy,DC=lug-ag,DC=de'  ## OUs müssen angepasst werden ##
+            $OUGroup = 'OU=Kurs,OU=Gruppen,OU=academy,DC=academy,DC=lug-ag,DC=de'
             }
             elseif($Seminartyp -eq "f"){
-            $OU = 'OU=Firmenschulung,OU=Teilnehmer,OU=Training,DC=training,DC=lug-ag,DC=de'
-            $OUGroup = 'OU=Firmenschulung,OU=Gruppen,OU=Training,DC=training,DC=lug-ag,DC=de'
+            $OU = 'OU=Firmenschulung,OU=Teilnehmer,OU=academy,DC=academy,DC=lug-ag,DC=de'
+            $OUGroup = 'OU=Firmenschulung,OU=Gruppen,OU=academy,DC=academy,DC=lug-ag,DC=de'
             }
             elseif ($Seminartyp -eq "trainer") {
-               $OU = 'OU=Trainer,OU=Training,DC=training,DC=lug-ag,DC=de'
-               $OUGroup = 'OU=Firmenschulung,OU=Gruppen,OU=Training,DC=training,DC=lug-ag,DC=de'
+               $OU = 'OU=Trainer,OU=academy,DC=academy,DC=lug-ag,DC=de'
+               $OUGroup = 'OU=Firmenschulung,OU=Gruppen,OU=academy,DC=academy,DC=lug-ag,DC=de'
             }
 
 
@@ -289,15 +289,15 @@ function CreateUser($cuVorname, $cuNachname){
 
 
     $Konto = $cuVorname + "." + $cuNachname
-    $TRKonto = "Training\" + $Konto
+    $TRKonto = "academy\" + $Konto
     $Benutzername = $cuNachname + " " + $cuVorname
-    $uid = $Konto + "@training.lug-ag.de"
+    $uid = $Konto + "@academy.local"
     $pwgen= -join ( (33..39) + (49..57) + (65..90) + (97..107) + (109..122) | Get-Random -Count 10 | Foreach-Object {[char]$_})
     $pw = ConvertTo-SecureString -AsPlainText $pwgen -Force
 
-    if(-not(Get-ADuser -Filter {samaccountname -eq $Benutzername} -Server "training.lug-ag.de")){
-        New-ADUser -Server "training.lug-ag.de" -Name $Benutzername -DisplayName ($User.Name + " " + $User.Vorname) -description $Group -UserPrincipalName ($Konto + "@training.lug-ag.de") -SamAccountName $Konto -GivenName $User.Vorname -Surname $User.Name -Path $OU –AccountPassword $pw -PasswordNeverExpires $true -Enabled 1 -OtherAttributes @{accountExpires=$exp.AddDays($dauer);uid=$uid}
-        Add-adgroupmember -Identity $Group -Server "training.lug-ag.de" -Members $Konto
+    if(-not(Get-ADuser -Filter {samaccountname -eq $Benutzername} -Server "academy.local")){
+        New-ADUser -Server "academy.local" -Name $Benutzername -DisplayName ($User.Name + " " + $User.Vorname) -description $Group -UserPrincipalName ($Konto + "@academy.local") -SamAccountName $Konto -GivenName $User.Vorname -Surname $User.Name -Path $OU –AccountPassword $pw -PasswordNeverExpires $true -Enabled 1 -OtherAttributes @{accountExpires=$exp.AddDays($dauer);uid=$uid}
+        Add-adgroupmember -Identity $Group -Server "academy.local" -Members $Konto
 
         "$cuVorname;$cuNachname;$Konto;$pwgen" >> $exportdatei
 
@@ -309,7 +309,7 @@ function CreateUser($cuVorname, $cuNachname){
 function Homelaufwerkgen($cuVorname, $cuNachname, $pfad){
 
     $Konto = $cuVorname + "." + $cuNachname
-    $TRKonto = "Training\" + $Konto
+    $TRKonto = "academy\" + $Konto
     $Komppfadh = $pfad + "\" + $Konto
 
 
@@ -328,11 +328,11 @@ function Homelaufwerkgen($cuVorname, $cuNachname, $pfad){
 }
 
 function Gruppengen($Group,$OUGroup,$Klpfad){
-    $TRGroup = "Training\" + $Group
+    $TRGroup = "academy\" + $Group
     $Komppfad = $Klpfad + "\" + $Group
     
-    if(-not(Get-ADGroup -Filter {name -eq $Group} -Server "Training.lug-ag.de")){
-        new-adgroup -GroupScope Universal -Name $Group -Path $OUGroup -Server "training.lug-ag.de"
+    if(-not(Get-ADGroup -Filter {name -eq $Group} -Server "academy.local")){
+        new-adgroup -GroupScope Universal -Name $Group -Path $OUGroup -Server "academy.local"
     } else {
         return "ACHTUNG! Gruppe existiert schon"
         
@@ -363,15 +363,15 @@ function Gruppengen($Group,$OUGroup,$Klpfad){
 
 function VMMrolegen($cuVorname, $cuNachname, $Standort){
     $Konto = $cuVorname + "." + $cuNachname
-    $TRKonto = "Training\" + $Konto
+    $TRKonto = "academy\" + $Konto
 
     <#if($Standort -eq "nbg"){
 
-        repadmin /syncall training.lug-ag.de /AdeP
+        repadmin /syncall academy.local /AdeP
 
         $MyVMM = "nbg-vmm.cloud.lug-ag.de"
         Get-SCVMMServer -ComputerName $MyVMM
-        $cloud = Get-SCCloud -Name Training
+        $cloud = Get-SCCloud -Name academy
 
         ###VMM Userrole erstellen + Member hinzufügen
         $scopeToAdd = @()
@@ -405,19 +405,19 @@ function VMMrolegen($cuVorname, $cuNachname, $Standort){
 
     if($Standort -eq "ka" -or $Standort -eq "s" -or $Standort -eq "hn" -or $Standort -eq "r" -or $Standort -eq "nbg"){
 
-        $MyVMM = "vmm04.cloud.lug-ag.de"
+        $MyVMM = "vmm01"
         Get-SCVMMServer -ComputerName $MyVMM
-        $cloud = Get-SCCloud -Name Training
+        $cloud = Get-SCCloud -Name academy
 
         $scopeToAdd = @()
-        $scopeToAdd += Get-SCCloud -ID "41646759-ff2b-402a-a472-a37391e3664f"
+        $scopeToAdd += Get-SCCloud -ID "41646759-ff2b-402a-a472-a37391e3664f" # ID von neuem VMM einfügen
         $JobGroupID = [Guid]::NewGuid().ToString()
         Add-SCUserRolePermission -Cloud $cloud -JobGroup $JobGroupID
         Set-SCUserRole -JobGroup $JobGroupID -AddMember $TRKonto -AddScope $scopeToAdd -Permission @("CreateFromVHDOrTemplate", "Create", "AllowLocalAdmin", "PauseAndResume", "RemoteConnect", "Remove", "Shutdown", "Start", "Stop") -ShowPROTips $false -VMNetworkMaximumPerUser "11" -VMNetworkMaximum "11"
-        Set-SCUserRoleQuota -Cloud $cloud -JobGroup $JobGroupID -CPUCount "10" -MemoryMB "20480" -StorageGB "2200" -UseCustomQuotaCountMaximum -VMCount "8"
-        Set-SCUserRoleQuota -Cloud $cloud -JobGroup $JobGroupID -QuotaPerUser -CPUCount "10" -MemoryMB "20480" -StorageGB "2200" -UseCustomQuotaCountMaximum -VMCount "8"
+        Set-SCUserRoleQuota -Cloud $cloud -JobGroup $JobGroupID -CPUCount "8" -MemoryMB "20480" -StorageGB "2200" -UseCustomQuotaCountMaximum -VMCount "6"
+        Set-SCUserRoleQuota -Cloud $cloud -JobGroup $JobGroupID -QuotaPerUser -CPUCount "8" -MemoryMB "216384" -StorageGB "2200" -UseCustomQuotaCountMaximum -VMCount "6"
 
-        $libResource = Get-SCVMTemplate -Name "Windows 10 Edu v1903"
+        <# $libResource = Get-SCVMTemplate -Name "Windows 10 Edu v1903"
         Grant-SCResource -Resource $libResource -JobGroup $JobGroupID
         $libResource = Get-SCVMTemplate -Name "(Visual Studio 2019) Windows 10 Edu v1903"
         Grant-SCResource -Resource $libResource -JobGroup $JobGroupID
@@ -432,7 +432,7 @@ function VMMrolegen($cuVorname, $cuNachname, $Standort){
         $libResource = Get-SCVMTemplate -Name "Windows Server 2016 v1607 (Core)"
         Grant-SCResource -Resource $libResource -JobGroup $JobGroupID
         $libResource = Get-SCVMTemplate -Name "Ubuntu 1904"
-        Grant-SCResource -Resource $libResource -JobGroup $JobGroupID
+        Grant-SCResource -Resource $libResource -JobGroup $JobGroupID #>
         $libResource = Get-SCVMNetwork -Name "Internet"
         Grant-SCResource -Resource $libResource -JobGroup $JobGroupID
         
@@ -443,7 +443,7 @@ function VMMrolegen($cuVorname, $cuNachname, $Standort){
 
     $userRole = Get-SCUserRole -Name $Konto
 
-    $logicalNetwork = Get-SCLogicalNetwork -Name "VM-CrossHypervisor-VLANs"
+    $logicalNetwork = Get-SCLogicalNetwork -Name "LogicalNetwork"
     $vmNetwork = New-SCVMNetwork -AutoCreateSubnet -Name $Switch1 -LogicalNetwork $logicalNetwork -Description $Group
     Set-SCVMNetwork -VMNetwork $vmNetwork -RunAsynchronously -Owner $TRKonto -UserRole $userRole
 
@@ -462,16 +462,16 @@ function VMMrolegen($cuVorname, $cuNachname, $Standort){
     }
 
 function VMMondeso ($cuVorname, $cuNachname, $Standort){
-    $MyVMM = "vmm04.cloud.lug-ag.de"
+    $MyVMM = "vmm01"
     Get-SCVMMServer -ComputerName $MyVMM
-    $cloud = Get-SCCloud -Name Training
+    $cloud = Get-SCCloud -Name academy
     
     
     $Konto = $cuVorname + "." + $cuNachname
-    $TRKonto = "Training\" + $Konto
+    $TRKonto = "academy\" + $Konto
 
-    $scopeToAdd += Get-SCCloud -name "Training"
-    Get-SCUserRole -Name "Ondeso" | Set-SCUserRole -AddMember $TRKonto -AddScope $scopeToAdd -Permission @("AllowLocalAdmin", "RemoteConnect", "Start") -ShowPROTips $false -VMNetworkMaximumPerUser "2" -VMNetworkMaximum "2"
+    $scopeToAdd += Get-SCCloud -name "academy"
+    Get-SCUserRole -Name "Ondeso B" | Set-SCUserRole -AddMember $TRKonto -AddScope $scopeToAdd -Permission @("AllowLocalAdmin", "RemoteConnect", "Start") -ShowPROTips $false -VMNetworkMaximumPerUser "2" -VMNetworkMaximum "2"
     #$libResource = Get-SCVMNetwork -Name "Internet"
     #Grant-SCResource -Resource $libResource
 
@@ -480,7 +480,7 @@ function VMMondeso ($cuVorname, $cuNachname, $Standort){
 #Skriptteil
 
 Gruppengen -Group $Group -OUGroup $OUGroup -Klpfad $KLpfad
-$exportdatei = "C:\skripts\Userlists\$Group.csv"
+$exportdatei = "C:\skripte\Userlists\$Group.csv"
 
 if(-not(Get-ChildItem $exportdatei -ErrorAction Ignore)){
 New-Item $exportdatei
@@ -528,10 +528,10 @@ Foreach($user in $Users){
 
 
 
-if($Standort -eq "ka" -or $Standort -eq "s" -or $Standort -eq "hn" -or $Standort -eq "r" -or $Standort -eq "nbg"){
-        Add-ADGroupMember -Identity "SG_rdszugriff" -Members "$Group" -Server "training.lug-ag.de"
-        Add-ADGroupMember -Identity "SG_rdszugriff_KZH" -Members "$Group" -Server "training.lug-ag.de"
-        Add-ADGroupMember -Identity "sg_rdszugriff_APP_Explorer" -Members "$Group" -Server "training.lug-ag.de"
+if($Standort -eq "ka" -or $Standort -eq "s" -or $Standort -eq "hn" -or $Standort -eq "r" -or $Standort -eq "nbg"){ ## ?? redundant ?? ##
+        Add-ADGroupMember -Identity "SG_rdszugriff" -Members "$Group" -Server "academy.local"
+        Add-ADGroupMember -Identity "SG_rdszugriff_KZH" -Members "$Group" -Server "academy.local"
+        Add-ADGroupMember -Identity "sg_rdszugriff_APP_Explorer" -Members "$Group" -Server "academy.local"
         Write-Host "$Group wurde SG_Remotezugriff hinzugefügt"
 }
 
@@ -539,7 +539,7 @@ if($Standort -eq "ka" -or $Standort -eq "s" -or $Standort -eq "hn" -or $Standort
 
 ### Prüfung ob Benutzer Syncronisiert wurde
 
-$UPN = $CUVorname + "." + $CUNachname + "@training.lug-ag.de"
+$UPN = $CUVorname + "." + $CUNachname + "@academy.local"
 
 Write-Host "Warten auf Office 365 Sync..."
 do {
@@ -564,19 +564,19 @@ if($opruef -eq "schuppi"){
     }
     
 
-    $membis = Get-ADGroupMember -Identity $Group -Server training.lug-ag.de
-    $trainis = Get-ADGroupMember -Identity $trainers -Server training.lug-ag.de
+    $membis = Get-ADGroupMember -Identity $Group -Server "academy.local"
+    $trainis = Get-ADGroupMember -Identity $trainers -Server "academy.local"
 
         foreach($membi in $membis){
 
-        $membiupn = $membi.samaccountname +'@training.lug-ag.de'
+        $membiupn = $membi.samaccountname +'@academy.local'
         get-team | Where-Object DisplayName -eq $Group | Add-TeamUser -User $membiupn
 
         }
 
         foreach($traini in $trainis){
 
-        $trainiupn = $traini.samaccountname +'@training.lug-ag.de'
+        $trainiupn = $traini.samaccountname +'@academy.local'
         get-team | Where-Object DisplayName -eq $Group | Add-TeamUser -User $trainiupn
 
         }
@@ -587,7 +587,7 @@ if($opruef -eq "schuppi"){
 
         foreach($membii in $membis){
 
-        $membiiUPN = $membii.samaccountname + "@training.lug-ag.de"
+        $membiiUPN = $membii.samaccountname + "@academy.local"
         Set-MsolUser -UserPrincipalName $membiiUPN -UsageLocation DE
         Set-MsolUserLicense -UserPrincipalName $membiiUPN -AddLicenses "reseller-account:O365_BUSINESS_ESSENTIALS"
 
@@ -600,7 +600,7 @@ if($opruef -eq "schuppi"){
 
         foreach($membii in $membis){
 
-        $membiiUPN = $membii.samaccountname + "@training.lug-ag.de"
+        $membiiUPN = $membii.samaccountname + "@academy.local"
         Set-MsolUser -UserPrincipalName $membiiUPN -UsageLocation DE
         Set-MsolUserLicense -UserPrincipalName $membiiUPN -AddLicenses "reseller-account:O365_BUSINESS_PREMIUM"
 
@@ -614,7 +614,7 @@ if($opruef -eq "schuppi"){
 
         foreach($membii in $membis){
 
-        $membiiUPN = $membii.samaccountname + "@training.lug-ag.de"
+        $membiiUPN = $membii.samaccountname + "@academy.local"
         Set-MsolUser -UserPrincipalName $membiiUPN -UsageLocation DE
         Set-MsolUserLicense -UserPrincipalName $membiiUPN -AddLicenses "reseller-account:TEAMS_EXPLORATORY"
 
