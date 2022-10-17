@@ -1,52 +1,24 @@
-$OUUser = "OU=User,OU=Academy,DC=academy,DC=local"
-$OUGroups = "OU=Groups,OU=Academy,DC=academy,DC=local"
-$Switch1 = 'Netzwerk 1'
-$Switch2 = 'Netzwerk 2'
-$Switch3 = 'Netzwerk 3'
-$Switch4 = 'Netzwerk 4'
-$Switch5 = 'Netzwerk 5'
-$Users = $null
-$Groups = $null
+function CreateUser($Nutzername, $group){
 
-Connect-MsolService
-$Groups = Get-MsolGroup | where DisplayName -like "FI U*"
-
-foreach ($g in $Groups){
-    $Users = (Get-MsolGroupMember -GroupObjectId $g.ObjectId).EmailAddress
-    SamExtract -List $Users
-    Gruppengen -group $g.DisplayName
-    foreach ($usi in $Users) {
-        
-        
-
-        CreateUser -Nutzerame $usi
-        VMMrolegen -Benutzername $usi
-    } 
-foreach($SamAccountName in $Breakup){
-    Write-Host $SamAccountName
-}
-}
-
-<# foreach ($usi in $Users) {
-    CreateUser -Nutzername $usi.samaccountname
-}
- #>
-function CreateUser($Nutzerame){
-
-
+    
     $Konto = $Nutzername
     $TRKonto = "Academy\" + $Konto
     $uid = $Konto + "@academy.local"
-    $pwgen= "P@ssword"
+    $Name = $Nutzername
+    $pwgen= "P@ssword1"
     $pw = ConvertTo-SecureString -AsPlainText $pwgen -Force
 
-    try{
-        New-ADUser -Server "academy.local" -Name $Nutzername -DisplayName ($User.Name + " " + $User.Vorname) -description $g -UserPrincipalName ($Konto + "@academy.local") -SamAccountName $Konto -GivenName $User.Vorname -Surname $User.Name -Path $OUUser –AccountPassword $pw -PasswordNeverExpires $true -Enabled 1
-        Add-adgroupmember -Identity $g -Server "academy.local" -Members $Konto
+    $Nutzername
+
+   # try{
+        New-ADUser -Server "academy.local" -Name $Nutzername -DisplayName $Nutzername -description $g -UserPrincipalName ($Konto + "@academy.local") -SamAccountName $Nutzername -Path $OUUser –AccountPassword $pw -PasswordNeverExpires $true -Enabled 1
+        Add-adgroupmember -Identity $group -Server "academy.local" -Members $Konto
+        Write-Host $Nutzername
+        Write-Host $group
 
         return "Benutzer $Konto wurde angelegt"
-    }catch{
-    return "Benutzer $Konto existiert schon"  }
+   # }catch{
+    #return "Benutzer $Konto existiert schon"  }
 }
 
 
@@ -57,7 +29,7 @@ function Gruppengen($group){
         return "ACHTUNG! Gruppe existiert schon"
         
         $fortf = Read-Host "Trotzdem fortfahren? y/n"
-        if ($fortf = "y") {
+        if ($fortf -eq "y") {
             Start-Sleep -Seconds 15
         }else {
             exit
@@ -113,10 +85,10 @@ function VMMrolegen($Benutzername){
 
         $MyVMM = "vmm01.academy.local"
         Get-SCVMMServer -ComputerName $MyVMM
-        $cloud = Get-SCCloud -Name Training
+        $cloud = Get-SCCloud -Name Academy
 
-        #$scopeToAdd = @()
-        #$scopeToAdd += Get-SCCloud -ID "41646759-ff2b-402a-a472-a37391e3664f"
+        $scopeToAdd = @()
+        $scopeToAdd += Get-SCCloud -ID "7f2d03b7-cd8d-4d79-9859-4daee06e5671"
         $JobGroupID = [Guid]::NewGuid().ToString()
         Add-SCUserRolePermission -Cloud $cloud -JobGroup $JobGroupID
         Set-SCUserRole -JobGroup $JobGroupID -AddMember $TRKonto -AddScope $scopeToAdd -Permission @("CreateFromVHDOrTemplate", "Create", "AllowLocalAdmin", "PauseAndResume", "RemoteConnect", "Remove", "Shutdown", "Start", "Stop") -ShowPROTips $false -VMNetworkMaximumPerUser "11" -VMNetworkMaximum "11"
@@ -129,7 +101,7 @@ function VMMrolegen($Benutzername){
 
     $userRole = Get-SCUserRole -Name $Konto
 
-    $logicalNetwork = Get-SCLogicalNetwork -Name "VM-CrossHypervisor-VLANs"
+    $logicalNetwork = Get-SCLogicalNetwork -Name "LogicalNetwork"
     $vmNetwork = New-SCVMNetwork -AutoCreateSubnet -Name $Switch1 -LogicalNetwork $logicalNetwork -Description $Group
     Set-SCVMNetwork -VMNetwork $vmNetwork -RunAsynchronously -Owner $TRKonto -UserRole $userRole
 
@@ -148,9 +120,47 @@ function VMMrolegen($Benutzername){
     }
 
 function SamExtract($List) {
-    
+    #$List
+    $Global:Breakup.Clear()
+
     foreach ($String in $List) {
-        $Global:Breakup += $String.TrimEnd("@training.lug-ag.de")
+        
+        $Global:Breakup += $String.replace("@training.lug-ag.de","")
         
     }
+    #$Breakup
 }
+
+$OUUser = "OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local"
+$OUGroups = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
+$Switch1 = 'Netzwerk 1'
+$Switch2 = 'Netzwerk 2'
+$Switch3 = 'Netzwerk 3'
+$Switch4 = 'Netzwerk 4'
+$Switch5 = 'Netzwerk 5'
+$Users = $null
+$Groups = $null
+$Nutzername = $null
+$Benutzername = $null
+$Global:Breakup = @()
+
+Connect-MsolService
+$Groups = Get-MsolGroup | Where-Object DisplayName -eq "PPDT 22-3"
+
+foreach ($Global:g in $Groups){
+    $Users = @()
+    $Users += (Get-MsolGroupMember -GroupObjectId $g.ObjectId).EmailAddress
+    #$Users
+    Write-Host $Users
+    SamExtract -List $Users
+    Gruppengen -group $g.DisplayName
+    #Write-Host $Global:Breakup.Count
+    foreach ($SamAccountName in $Global:Breakup) {
+        
+        
+        Write-Host "Call createUser $SamAccoutName"
+        CreateUser -Nutzername $SamAccountName -group $g.DisplayName
+    } 
+    
+}
+Write-Host -ForegroundColor Red "Nicht vergessen das 'Trainer aus allen Gruppen entfernen' Skript auszuführen "

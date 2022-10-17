@@ -292,8 +292,6 @@ function CreateUser($cuVorname, $cuNachname){
     $TRKonto = "academy\" + $Konto
     $Benutzername = $cuNachname + " " + $cuVorname
     $uid = $Konto + "@academy.local"
-    $pwgen= -join ( (33..39) + (49..57) + (65..90) + (97..107) + (109..122) | Get-Random -Count 10 | Foreach-Object {[char]$_})
-    $pw = ConvertTo-SecureString -AsPlainText $pwgen -Force
 
     if(-not(Get-ADuser -Filter {samaccountname -eq $Benutzername} -Server "academy.local")){
         New-ADUser -Server "academy.local" -Name $Benutzername -DisplayName ($User.Name + " " + $User.Vorname) -description $Group -UserPrincipalName ($Konto + "@academy.local") -SamAccountName $Konto -GivenName $User.Vorname -Surname $User.Name -Path $OU –AccountPassword $pw -PasswordNeverExpires $true -Enabled 1 -OtherAttributes @{accountExpires=$exp.AddDays($dauer);uid=$uid}
@@ -477,6 +475,49 @@ function VMMondeso ($cuVorname, $cuNachname, $Standort){
 
 }
 
+function Generate-Password {
+    
+    $pwcheck = @{}
+    [array]$chars1 = (A..Z)
+    $chars2 = (1..9)
+    $chars3 = (a..z)
+
+    while ($CheckPassed -eq $true) {
+       
+
+        $pwgen= -join ( (33..39) + (49..57) + (65..90) + (97..107) + (109..122) | Get-Random -Count 10 | Foreach-Object {[char]$_ ; #$pwcheck.Add( [char]$_ )#>} )
+
+        foreach ($ch in $char1){
+            if ($pwgen.Contains($ch)) {
+                $check1 = $true
+            }
+        }
+        foreach ($ch in $char2){
+            if ($pwgen.Contains($ch)) {
+                $check2 = $true
+            }
+        }
+        foreach ($ch in $char3){
+            if ($pwgen.Contains($ch)) {
+                $check3 = $true
+            }
+        }
+
+        switch ($check1,$check2,$check3) {
+            $true { $Checkpassed = $true }
+            Default {}
+        }
+
+        if ( Write-Host $pwgen.Contains( ("A".."Z"))) {
+            Write-Host  "true"
+        }
+    }
+
+
+    $pw = ConvertTo-SecureString -AsPlainText $pwgen -Force
+
+    
+}
 #Skriptteil
 
 Gruppengen -Group $Group -OUGroup $OUGroup -Klpfad $KLpfad
