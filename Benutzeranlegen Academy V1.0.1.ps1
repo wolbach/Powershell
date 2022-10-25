@@ -1,6 +1,6 @@
 <#
 1.0.0 Anpassung der Domäne, der VMM-Erstellung; Erstellung Generate-Password; Fix für hinzufügen zu Team; Eingabe der Kursart und entsprechende Erstellung
-#>
+1.0.1 Generate-Password erstellt PW bis passendes generiert wurde, VMCount von SCUserRole auf 8 erhöht, Vor-Nachname angepasst (New-ADUSer)#>
 
 function New-VMMRole {
     param (
@@ -16,7 +16,7 @@ function New-VMMRole {
         Add-SCUserRolePermission -Cloud $cloud -JobGroup $JobGroupID
         Set-SCUserRole -JobGroup $JobGroupID -AddMember $TRKonto -AddScope $scopeToAdd -Permission @("CreateFromVHDOrTemplate", "Create", "AllowLocalAdmin", "PauseAndResume", "RemoteConnect", "Remove", "Shutdown", "Start", "Stop") -ShowPROTips $false -VMNetworkMaximumPerUser "11" -VMNetworkMaximum "11"
         Set-SCUserRoleQuota -Cloud $cloud -JobGroup $JobGroupID -CPUCount "8" -MemoryMB "16384" -StorageGB "2200" -UseCustomQuotaCountMaximum -VMCount "6"
-        Set-SCUserRoleQuota -Cloud $cloud -JobGroup $JobGroupID -QuotaPerUser -CPUCount "8" -MemoryMB "16384" -StorageGB "2200" -UseCustomQuotaCountMaximum -VMCount "6"
+        Set-SCUserRoleQuota -Cloud $cloud -JobGroup $JobGroupID -QuotaPerUser -CPUCount "8" -MemoryMB "16384" -StorageGB "2200" -UseCustomQuotaCountMaximum -VMCount "8"
 
         New-SCUserRole -Name $Sam -UserRoleProfile "TenantAdmin" -JobGroup $JobGroupID
         sleep 5
