@@ -19,7 +19,6 @@
     Anredegedöhns anders machen
     Lizenzname überprüfen
     Evtl implementierung automatischer Exchange Migration
-    Ablaufdatum Abfrage, ob unbegrenzt oder Zeitlimit
     evtl auslagerung in Funktionen
     #>
   
@@ -71,15 +70,17 @@
      $Vorname = Read-Host -Prompt "Geben Sie den Vornamen ein (Thomas)"
      $Nachname = Read-Host -Prompt "Geben Sie den Nachnamen ein (Mueller)"
      $beschreibung = Read-Host -Prompt "Geben Sie eine Beschreibung ein"
-     $aktiv = Read-Host -Prompt "Soll Account aktiv sein? Jj/Nn"
-     $ablaufdatum = Read-Host -Prompt "Ablaufdatum für account format: TT/MM/JJJJ HH:MM:SS  (!!Tag +1 rechnen!!) / Enter für never Expires"
-     $Start = Read-Host -Prompt "Eintrittdatum ----ACHTUNG!!! Format:JJJJ-TT-MM  ACHTUNG!!!----"
-     $MonatsanfangJahr = $Start.Substring(0,5)
-     $MonatsanfangMon = $Start.Substring(8,2)
-     $monatsanfangstag = "-01"
-     $Monatsanfang = "$MonatsanfangJahr$MonatsanfangMon$monatsanfangstag"
-     $Wochenstunden = Read-Host -Prompt "Wochenstunden bsp: 40"
-     $Urlaubstage = Read-Host -Prompt "Urlaubstage bsp: 30"
+     
+     $aktiv = Read-Host -Prompt "Soll Account aktiv sein? Y/N"
+     
+     $dat = Read-Host "Ablaufdatum angeben? y/n"
+     if ($dat -eq "y") {
+        $ablaufdatum = Read-Host -Prompt "Ablaufdatum für account format: TT/MM/JJJJ HH:MM:SS  (!!Tag +1 rechnen!!)"
+     } else {
+        $
+     }
+     
+     
  
      
      $Vorname = $Vorname -replace "ä", "ae"
@@ -246,7 +247,7 @@
  
  $dis = $Vorname + " " + $Nachname
  $ou = 'OU=Benutzer,OU=LutzundGrub,DC=lg,DC=local'
- New-ADUser -HomeDrive $driveletter -HomeDirectory $fullPath -ChangePasswordAtLogon $false -PasswordNeverExpires $true -Name  $abfragename -State $Bundesland -City $Ort -PostalCode $PLZ -StreetAddress $Strasse -Description $beschreibung -DisplayName $dis -Path $ou -SamAccountName $Benutzername -GivenName $Vorname -Surname $Nachname  –AccountPassword (ConvertTo-Securestring “P@ssword” –asplaintext –Force) -Enabled 1 -UserPrincipalName ($Benutzername + "@lutzundgrub.de")
+ New-ADUser -HomeDrive $driveletter -HomeDirectory $fullPath -ChangePasswordAtLogon $false -PasswordNeverExpires $true -Name $abfragename -DisplayName $dis -Path $ou -SamAccountName $Benutzername -GivenName $Vorname -Surname $Nachname  –AccountPassword (ConvertTo-Securestring “P@ssword” –asplaintext –Force) -Enabled $true -UserPrincipalName ($Benutzername + "@lutzundgrub.de") 
  $homeshare = New-Item -Path $fullPath -ItemType Directory -Force
  $acl = Get-Acl $homeshare
  $user = Get-ADUser -Identity $Benutzername
@@ -328,9 +329,9 @@
  
  
  #### Benutzer ablaufen
- if ($null -ne $ablaufdatum) {
+<#  if ($null -ne $ablaufdatum) {
  Set-ADAccountExpiration -Identity $Benutzername -DateTime "$ablaufdatum"
- }
+ } #>
  
  
  ### Benutzer aktiv
