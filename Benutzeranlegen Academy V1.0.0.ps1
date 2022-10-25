@@ -46,6 +46,8 @@ function New-VMMRole {
 
 function Generate-Password {
 
+    while ($valid -eq $false) {
+        
         $pwgen= -join ( (35..38) + (49..57) + (65..90) + (97..107) + (109..122) | Get-Random -Count 10 | Foreach-Object {[char]$_}) 
 
         $numCriteriaMet = (
@@ -63,6 +65,7 @@ function Generate-Password {
         }elseif ($valid){
             $pw = ConvertTo-SecureString -AsPlainText $pwgen -Force
         }
+    }
   
 }
 
@@ -86,7 +89,7 @@ $sam = $usi.vorname + "." + $usi.name
 Generate-Password
 
 # On-premise creation
-New-ADUser -AccountPassword $pw -CannotChangePassword $true -UserPrincipalName $usi.UPN -DisplayName $sam -Name $usi.Name -GivenName $usi.Vorname 
+New-ADUser -AccountPassword $pw -CannotChangePassword $true -UserPrincipalName $usi.UPN -DisplayName $sam -Name $sam -SurName $usi.Name -GivenName $usi.Vorname 
 
 if ($kurs -eq "y") {
     New-VMMRole -User $sam
@@ -94,7 +97,7 @@ if ($kurs -eq "y") {
 
 # Azure/M365 creation
 New-MsolUser -UserPrincipalName $UPN -FirstName $usi.vorname -LastName $usi.name -DisplayName $sam -Password $pw -LicenseAssignment "reseller-account:O365_BUSINESS_PREMIUM" -UsageLocation "DE"
-Get-Team | where DisplayName -eq $Group |Add-TeamUser -User $UPN
+Get-Team | where DisplayName -eq $Group |Add-TeamUser -User $UPN ## Hinzufügen funktioniert nicht
 
 
 "$UPN;$pwgen" >> "$dateipfad\Userlists\$Group.csv"
