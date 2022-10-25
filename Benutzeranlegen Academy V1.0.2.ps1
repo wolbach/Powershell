@@ -1,6 +1,8 @@
 <#
 1.0.0 Anpassung der Domäne, der VMM-Erstellung; Erstellung Generate-Password; Fix für hinzufügen zu Team; Eingabe der Kursart und entsprechende Erstellung
-1.0.1 Generate-Password erstellt PW bis passendes generiert wurde, VMCount von SCUserRole auf 8 erhöht, Vor-Nachname angepasst (New-ADUSer)#>
+1.0.1 Generate-Password erstellt PW bis passendes generiert wurde, VMCount von SCUserRole auf 8 erhöht, Vor-Nachname angepasst (New-ADUSer)
+1.0.2 Neue Funktion Create-User
+#>
 
 function New-VMMRole {
     param (
@@ -69,6 +71,15 @@ function Generate-Password {
   
 }
 
+function Create-User {
+    param (
+        $User
+    )
+
+    New-ADUser -AccountPassword $pw -CannotChangePassword $true -UserPrincipalName $usi.UPN -DisplayName $sam -Name $sam -SurName $User.Name -GivenName $User.Vorname
+    
+}
+
 
 $dateipfad = "C:\Skripte\"
 $user = Import-Csv -Delimiter ";" -LiteralPath "$dateipfad\user.csv"
@@ -89,7 +100,7 @@ $sam = $usi.vorname + "." + $usi.name
 Generate-Password
 
 # On-premise creation
-New-ADUser -AccountPassword $pw -CannotChangePassword $true -UserPrincipalName $usi.UPN -DisplayName $sam -Name $sam -SurName $usi.Name -GivenName $usi.Vorname 
+Create-User -User $usi
 
 if ($kurs -eq "y") {
     New-VMMRole -User $sam
