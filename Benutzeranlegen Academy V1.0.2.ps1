@@ -1,9 +1,3 @@
-<#
-1.0.0 Anpassung der Domäne, der VMM-Erstellung; Erstellung Generate-Password; Fix für hinzufügen zu Team; Eingabe der Kursart und entsprechende Erstellung
-1.0.1 Generate-Password erstellt PW bis passendes generiert wurde, VMCount von SCUserRole auf 8 erhöht, Vor-Nachname angepasst (New-ADUSer)
-1.0.2 Neue Funktion Create-User
-#>
-
 function New-VMMRole {
     param (
         $User
@@ -103,6 +97,15 @@ Generate-Password
 Create-User -User $usi
 
 if ($kurs -eq "y") {
+    New-VMMRole -User $sam
+}elseif ($kurs -ne "n" -and $ondeso -eq "y"){
+    $urole = Get-SCUserRole -Name "Ondeso B" 
+    $members = $urole.Members
+
+    foreach ($member in $members) {
+
+        Set-SCUserRole -UserRole $urole -RemoveMember $member.Name
+    }
     New-VMMRole -User $sam
 }
 

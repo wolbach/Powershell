@@ -26,11 +26,6 @@
 
  Connect-MsolService
 
- $Standort = $null
- $Strasse = $null
- $Ort = $null
- $PLZ = $null
- $Bundesland = $null
  $user = $null
  $Vorname = $null
  $Nachname = $null
@@ -59,6 +54,7 @@
  $anrede = $null
  $daimler = $null
  $insertquery2 = $null
+ $groups = @()
  
  
  
@@ -67,22 +63,12 @@
  do{
      Write-Host "Office365 Admin eingeben"
      #$credential = Get-Credential -Message "Office365 Admin eingeben"
-     $Vorname = Read-Host -Prompt "Geben Sie den Vornamen ein (Thomas)"
-     $Nachname = Read-Host -Prompt "Geben Sie den Nachnamen ein (Mueller)"
+     $Vorname = Read-Host -Prompt "Geben Sie den Vornamen ein"
+     $Nachname = Read-Host -Prompt "Geben Sie den Nachnamen ein"
      $beschreibung = Read-Host -Prompt "Geben Sie eine Beschreibung ein"
      
-     $aktiv = Read-Host -Prompt "Soll Account aktiv sein? Y/N"
-     
-     $dat = Read-Host "Ablaufdatum angeben? y/n"
-     if ($dat -eq "y") {
-        $ablaufdatum = Read-Host -Prompt "Ablaufdatum für account format: TT/MM/JJJJ HH:MM:SS  (!!Tag +1 rechnen!!)"
-     } else {
-        $
-     }
-     
-     
- 
-     
+     $aktiv = Read-Host -Prompt "Soll Account aktiv sein? y/n"
+    
      $Vorname = $Vorname -replace "ä", "ae"
      $Vorname = $Vorname -replace "ö", "oe"
      $Vorname = $Vorname -replace "ü", "ue"
@@ -108,39 +94,19 @@
              0 {Write-Host "Daimler Support: Nein" }
          }
      }
- 
- 
- 
- 
-     while( $anrede -ne "h" -and $anrede -ne "f"){
- 
- 
- 
-    $anrede = Read-Host -Prompt "Anrede? Wählen Sie eine Kategorie aus:(h = Herr / f = Frau)"
- 
-         switch($anrede){
-             "h" {Write-Host "Herr"}
-             "f" {Write-Host "Frau" }
-         }
-     }
- 
- 
+
      $Vorname
      $Nachname
      $beschreibung
-     write-host "beginnt am: (format: JJJJ-MM-TT) $Start"
-     write-host "ablaufen am: (format: TT/MM/JJJ HH:MM:SS) $ablaufdatum"
-     Write-Host "Monatsanfangsdatum (01 vom Monat) $Monatsanfang"
  
      $Benutzername = $Vorname.Substring(0,1) 
      $Benutzername = "$Benutzername$Nachname"
      $abfragename = $Vorname + " " + $Nachname
-     $groups = @()
+     
  
      $Benutzername = $Benutzername.ToLower()
      $fullPath = "\\LGKA-AWFS003\Homelaufwerke\$Benutzername"
-     $Benutzername
-      
+     Write-Host $Benutzername
      
      $richtig = read-host -Prompt "Sind die Eingaben Richtig (j/n)"
  
@@ -148,24 +114,6 @@
   
  
  }while ($richtig -eq "n")
- 
- 
- 
- while($Standort  -ne "hn" -and $Standort -ne "ka" -and $Standort -ne "nbg" -and $Standort -ne "s" -and $Standort -ne "woe" -and $Standort -ne "ra"){
- 
-     $Standort = Read-Host -Prompt "Wählen Sie einen Standort aus:(hn,nbg,ka,s,woe,ra)"
- 
-     switch($Standort){
- 
-         ka {$Strasse = "Am Sandfeld 9"; $Ort = "Karlsruhe"; $Bundesland = "Baden-Württemberg"; $PLZ = "76149"}
-         nbg {$Strasse = "Frankenstraße 160"; $Ort = "Nuernberg"; $Bundesland = "Bayern"; $PLZ = "90461"}
-         s {$Strasse = "Gutenbergstr. 11"; $Ort = "Stuttgart"; $Bundesland = "Baden-Württemberg"; $PLZ = "70771"}
-         hn {$Strasse = "Neckargartacherstr. 90"; $Ort = "Heilbronn"; $Bundesland = "Baden-Württemberg"; $PLZ = "74080"}
-         woe {$Strasse = "Daimlerstraße 1"; $Ort = "Wörth am Rhein"; $Bundesland = "Baden-Württemberg"; $PLZ = "76744"}
-         ra {$Strasse = "Mercedesstraße 1"; $Ort = "Rastatt"; $Bundesland = "Baden-Württemberg"; $PLZ = "76437"}
-         }
- }
- 
  
  while( $abteilung -ne "1" -and $abteilung -ne "2" -and $abteilung -ne "3" -and $abteilung -ne "4" -and $abteilung -ne "5" -and $abteilung -ne "6" -and $abteilung -ne "7" -and $abteilung -ne "8" -and $abteilung -ne "9" -and $abteilung -ne "10"){
  
