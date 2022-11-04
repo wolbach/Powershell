@@ -87,7 +87,7 @@ function Create-User {
     $UPN = ($User.vorname+"."+$User.name)+"@training.lug-ag.de"
     $sam = $User.vorname + "." + $User.name
 
-    New-ADUser -AccountPassword $pw -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -UserPrincipalName $UPN -DisplayName $sam -Name $sam -SurName $User.Name -GivenName $User.Vorname
+    New-ADUser -AccountPassword $pw -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -UserPrincipalName $UPN -DisplayName $sam -Name $sam -SurName $User.Name -GivenName $User.Vorname -Path $upath
     Add-ADGroupMember -Identity $Group -Members $sam
 }
 
@@ -104,18 +104,21 @@ function Test-Credentials {
     $Root = "LDAP://" + ([ADSI]'').distinguishedName
     $Domain = New-Object System.DirectoryServices.DirectoryEntry($Root,$UserName,$Password)
 
-    $valrunspace = [powershell]::Create()
+
+    # Planned for 2.1: Msol Credential validation
+<#     $valrunspace = [powershell]::Create()
 
     [void]$valrunspace.AddScript({
         param ($pw, $UPN)
+
     }).AddArgument($pw).AddArgument($UPN)
 
-    $valrunspace.Close()
+    $valrunspace.Close() #>
 
     if ($null -eq $Domain.name) {
-        Write-Host "Not validated"
+        return "Not validated"
     }else{
-        Write-Host "Validated"
+        return "OK"
     }
 }
 
@@ -132,29 +135,52 @@ Write-Host -ForegroundColor Red "Überprüfen, ob genug Lizenzen verfügbar sind
 
 $kurs = Read-Host "Fachinformatiker-Kurs? y/n"
 
-
-Test-Cred
-
 $Group = Read-Host "Gruppenname eingeben"
 
+$checkgr = Get-ADGroup -Identity $Group
+
+if ($null -eq $checkgr) {
+    Write-Host "Gruppe existiert schon!"
+}
 
 if ($Group.contains("Ondeso")) {
     $kurs = "o"
 }elseif ($Group.contains("FI")) {
     $kurs = "fi"
+}elseif ($Group.Contains("DOM") -or $Group.Contains("PPDT") -or $Group.Contains("E-Com")){
+    $kurs = "office"
+}elseif ($Group -eq "Trainers" -or "UG_Trainer") {
+    $kurs = "traini"
 }
 
 switch ($kurs) {
     "o" { 
+
         $grpath = "OU=Groups,OU=Firmenschulung,OU=Academy,DC=academy,DC=local" 
         $upath = "OU=User,OU=Firmenschulung,OU=Academy,DC=academy,DC=local"
+        $msolicense = "reseller-account:TEAMS_EXPLORATORY"
         Write-Host "Ondeso"
 
     }
     "fi"{ 
+
         $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $upath = "OU=User,OU=Firmenschulung,OU=Academy,DC=academy,DC=local"
+        $msolicense = "reseller-account:" # Insert AccountSku here
         Write-Host "FI"
+     }
+     "office"{
+
+        $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
+        $upath = "OU=User,OU=Firmenschulung,OU=Academy,DC=academy,DC=local"
+        $msolicense = "reseller-account:" # Insert AccountSku here
+
+     }
+     "traini"{
+
+        $upath = "OU=Trainer,OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local" # not sure correct later if given
+        $msolicense = "reseller-account:" # Insert AccountSku here
+
      }
     Default {
         Write-Error -Message "Nicht unterstützte Gruppenangabe"
@@ -164,6 +190,26 @@ New-ADGroup -DisplayName $Group -GroupScope Universal -Path $grpath -Name $Group
 Add-ADGroupMember -Identity "ACL_VMM_Users" -Members $Group
 
 foreach ($usi in $users){
+
+    $user.Name = $user.Name.replace("ü","ue")
+    $user.Name = $user.Name.replace("Ü","Ue")
+    $user.Name = $user.Name.replace("ö","oe")
+    $user.Name = $user.Name.replace("Ö","Oe")
+    $user.Name = $user.Name.replace("ä","ae")
+    $user.Name = $user.Name.replace("Ä","Ae")
+    $user.Name = $user.Name.replace("ß","ss")
+    $user.Name = $user.Name.replace("é","e")
+    $user.Name = $user.Name.replace(" ","-")
+
+    $user.Vorname = $user.Vorname.replace("ü","ue")
+    $user.Vorname = $user.Vorname.replace("Ü","Ue")
+    $user.Vorname = $user.Vorname.replace("ö","oe")
+    $user.Vorname = $user.Vorname.replace("Ö","Oe")
+    $user.Vorname = $user.Vorname.replace("ä","ae")
+    $user.Vorname = $user.Vorname.replace("Ä","Ae")
+    $user.Vorname = $user.Vorname.replace("ß","ss")
+    $user.Vorname = $user.Vorname.replace("é","e")
+    $user.Vorname = $user.Vorname.replace(" ","-")
 
 Generate-Password
 
@@ -191,46 +237,8 @@ Get-Team | where DisplayName -eq $Group |Add-TeamUser -User $UPN ## Hinzufügen 
 
 if (Test-Credentials -eq "OK") {
     "$UPN;$pwgen" >> "$dateipfad\Userlists\$Group.csv"
+}else{
+    Write-Error -Message "Nutzerdaten konnten nicht validiert werden"
 }
 
-}
-
-
-foreach ($usi in $users) {
-    [string]$UPN = ($usi.vorname+"."+$usi.name)+"@training.lug-ag.de"
-    $sam = $usi.vorname + "." + $usi.name
-    #New-MsolUser -UserPrincipalName $UPN -FirstName $usi.vorname -LastName $usi.name -DisplayName $sam -Password $pw -LicenseAssignment "reseller-account:TEAMS_EXPLORATORY" -UsageLocation "DE"
-    
-    $valid = $false
-    while ($valid -eq $false) {
-        
-        $pwgen= -join ( (35..38) + (49..57) + (65..90) + (97..107) + (109..122) | Get-Random -Count 10 | Foreach-Object {[char]$_}) 
-
-        $numCriteriaMet = (
-          (
-            ($pwgen -cmatch '[A-Z]'),    
-            ($pwgen -match '[!@#%^&$]'),  
-            ($pwgen -match '[0-9]')       
-          ) -eq $true
-        ).Count
-        
-        $valid = $numCriteriaMet -ge 3
-        
-         
-        if ($valid){
-            $pw = ConvertTo-SecureString -AsPlainText $pwgen -Force
-        }
-
-
-    }
-    
-    Get-MsolUser -UserPrincipalName $UPN | Set-MsolUser -DisplayName $sam
-    Set-MsolUserPassword -UserPrincipalName $UPN -NewPassword $pw
-    
-    Write-Host $UPN, $pwgen
-sleep 10
-#Get-Team | where DisplayName -eq $Group | Add-TeamUser -User $UPN ## Hinzufügen funktioniert nicht
-
-Set-ADAccountPassword -Identity $sam -NewPassword $pw
-Set-ADUser -Enabled $true -Identity $sam
 }
