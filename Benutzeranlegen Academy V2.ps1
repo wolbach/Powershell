@@ -84,10 +84,10 @@ function Create-User {
         $User
     )
 
-    $script:UPN = ($User.vorname+"."+$User.name)+"@training.lug-ag.de"
+    $script:UPN = ($User.vorname+"."+$User.name)+"@academy.local"
     $script:sam = $User.vorname + "." + $User.name
 
-    New-ADUser -AccountPassword $script:pw -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $script:UPN -DisplayName $script:sam.Replace("."," ") -Name $script:sam.Replace("."," ") -SurName $User.Name -GivenName $User.Vorname -Path $upath
+    New-ADUser -AccountPassword $script:pw -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $script:UPN -DisplayName $script:sam.Replace("."," ") -Name $script:sam -SurName $Name -GivenName $Vorname -Path $upath
     Add-ADGroupMember -Identity $Group -Members $script:sam
 }
 
@@ -129,8 +129,13 @@ $Group = $null
 $kurs = $null
 
 # Connecting Services
-Connect-MsolService
-Connect-MicrosoftTeams
+try {
+    Get-MsolDomain -ErrorAction Stop > $null
+}
+catch {
+    Connect-MsolService
+    Connect-MicrosoftTeams
+}
 
 Write-Host -ForegroundColor Red "Überprüfen, ob genug Lizenzen verfügbar sind!"
 
@@ -171,7 +176,7 @@ switch ($kurs) {
      "office"{
 
         $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
-        $upath = "OU=User,OU=Firmenschulung,OU=Academy,DC=academy,DC=local"
+        $upath = "OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $msolicense = "reseller-account:O365_BUSINESS_PREMIUM"
         Write-Host "Office-Kurs"
 
@@ -238,7 +243,8 @@ if ($kurs -eq "y") {
 New-MsolUser -UserPrincipalName $script:UPN -FirstName $usi.vorname -LastName $usi.name -DisplayName $script:sam.Replace("."," ") -Password $script:pw -UsageLocation "DE" 
 Set-MsolUserLicense -UserPrincipalName $script:UPN -AddLicenses $msolicense
 sleep 5
-Get-Team | where DisplayName -eq $Group |Add-TeamUser -User $script:UPN
+$grid = Get-Team | where DisplayName -eq $Group | select GroupID
+Add-TeamUser -GroupId $grid.GroupId -User $script:UPN 
 
 if (Test-Credentials -eq "OK") {
     "$script:UPN;$script:pwgen" >> "$dateipfad\Userlists\$Group.csv"
