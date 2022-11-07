@@ -3,8 +3,8 @@ function New-VMMRole {
         $User,
         $art
     )
-    $Sam = $User.SamAccountName
-    $TRKonto = "ACADEMY\"+$Sam
+    $script:sam = $User.SamAccountName
+    $TRKonto = "ACADEMY\"+$script:sam
     
     if ($art -eq "f") {
     
@@ -16,7 +16,7 @@ function New-VMMRole {
         Set-SCUserRoleQuota -Cloud $cloud -JobGroup $JobGroupID -CPUCount "8" -MemoryMB "16384" -StorageGB "2200" -UseCustomQuotaCountMaximum -VMCount "6"
         Set-SCUserRoleQuota -Cloud $cloud -JobGroup $JobGroupID -QuotaPerUser -CPUCount "8" -MemoryMB "16384" -StorageGB "2200" -UseCustomQuotaCountMaximum -VMCount "8"
 
-        New-SCUserRole -Name $Sam -UserRoleProfile "TenantAdmin" -JobGroup $JobGroupID
+        New-SCUserRole -Name $script:sam -UserRoleProfile "TenantAdmin" -JobGroup $JobGroupID
         sleep 5
         $userRole =  Get-SCUserRole -VMMServer $vmm -Name $User.SamAccountName
 
@@ -36,16 +36,16 @@ function New-VMMRole {
         Set-SCVMNetwork -VMNetwork $vmNetwork -RunAsynchronously -Owner $TRKonto -UserRole $userRole
 
         $libResource = Get-SCVMTemplate -Name "Windows 10 21H2"
-        Grant-SCResource -VMMServer $vmm -Resource $libResource -UserRoleName $Sam
+        Grant-SCResource -VMMServer $vmm -Resource $libResource -UserRoleName $script:sam
         $libResource = Get-SCVMTemplate -Name "Windows Server 2022 Standard (Desktop Experience)"
-        Grant-SCResource -VMMServer $vmm -Resource $libResource -UserRoleName $Sam
+        Grant-SCResource -VMMServer $vmm -Resource $libResource -UserRoleName $script:sam
     } elseif ($art -eq "o") {
 
         $Cloud = Get-SCCloud "Ondeso Training"
 
         $ACADuser = "ACADEMY\"+$User
         $JobGroupID = [Guid]::NewGuid().ToString()
-        Get-SCUserRole -Name "Ondeso B" | Set-SCUserRole -AddMember $ACADuser -AddScope $Cloud -Permission @("AllowLocalAdmin", "RemoteConnect", "Start") -ShowPROTips $false -VMNetworkMaximumPerUser "2" -VMNetworkMaximum "2"
+        Get-SCUserRole -Name "Ondeso B" | Set-SCUserRole -AddMember $Group -AddScope $Cloud -Permission @("AllowLocalAdmin", "RemoteConnect", "Start") -ShowPROTips $false -VMNetworkMaximumPerUser "2" -VMNetworkMaximum "2"
     
     }else{
     return "unexpected string has been received"
@@ -57,13 +57,13 @@ function Generate-Password {
     $valid = $false
     while ($valid -eq $false) {
         
-        $pwgen= -join ( (35..38) + (49..57) + (65..90) + (97..107) + (109..122) | Get-Random -Count 10 | Foreach-Object {[char]$_}) 
+        $script:pwgen= -join ( (35..38) + (49..57) + (65..90) + (97..107) + (109..122) | Get-Random -Count 10 | Foreach-Object {[char]$_}) 
 
         $numCriteriaMet = (
           (
-            ($pwgen -cmatch '[A-Z]'),    
-            ($pwgen -match '[!@#%^&$]'),  
-            ($pwgen -match '[0-9]')       
+            ($script:pwgen -cmatch '[A-Z]'),    
+            ($script:pwgen -match '[!@#%^&$]'),  
+            ($script:pwgen -match '[0-9]')       
           ) -eq $true
         ).Count
         
@@ -71,7 +71,7 @@ function Generate-Password {
         
          
         if ($valid){
-            $pw = ConvertTo-SecureString -AsPlainText $pwgen -Force
+            $script:pw = ConvertTo-SecureString -AsPlainText $script:pwgen -Force
         }
 
 
@@ -84,11 +84,11 @@ function Create-User {
         $User
     )
 
-    $UPN = ($User.vorname+"."+$User.name)+"@training.lug-ag.de"
-    $sam = $User.vorname + "." + $User.name
+    $script:UPN = ($User.vorname+"."+$User.name)+"@training.lug-ag.de"
+    $script:sam = $User.vorname + "." + $User.name
 
-    New-ADUser -AccountPassword $pw -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -UserPrincipalName $UPN -DisplayName $sam -Name $sam -SurName $User.Name -GivenName $User.Vorname -Path $upath
-    Add-ADGroupMember -Identity $Group -Members $sam
+    New-ADUser -AccountPassword $script:pw -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $script:UPN -DisplayName $script:sam.Replace("."," ") -Name $script:sam.Replace("."," ") -SurName $User.Name -GivenName $User.Vorname -Path $upath
+    Add-ADGroupMember -Identity $Group -Members $script:sam
 }
 
 function Test-Credentials {
@@ -96,8 +96,8 @@ function Test-Credentials {
         
     )
 
-    $domname = "ACADEMY\$sam"
-    $creds = New-Object System.Management.Automation.PSCredential -ArgumentList ($domname, $pw)
+    $domname = "ACADEMY\$script:sam"
+    $creds = New-Object System.Management.Automation.PSCredential -ArgumentList ($domname, $script:pw)
     $cred = Get-Credential -Credential $creds
     $UserName = $cred.UserName
     $Password = $cred.GetNetworkCredential().Password
@@ -109,9 +109,9 @@ function Test-Credentials {
 <#     $valrunspace = [powershell]::Create()
 
     [void]$valrunspace.AddScript({
-        param ($pw, $UPN)
+        param ($script:pw, $script:UPN)
 
-    }).AddArgument($pw).AddArgument($UPN)
+    }).AddArgument($script:pw).AddArgument($script:UPN)
 
     $valrunspace.Close() #>
 
@@ -122,6 +122,7 @@ function Test-Credentials {
     }
 }
 
+$users = $null
 $dateipfad = "C:\Skripte\"
 $users = Import-Csv -Delimiter ";" -LiteralPath "$dateipfad\user.csv"
 $Group = $null
@@ -133,11 +134,9 @@ Connect-MicrosoftTeams
 
 Write-Host -ForegroundColor Red "Überprüfen, ob genug Lizenzen verfügbar sind!"
 
-$kurs = Read-Host "Fachinformatiker-Kurs? y/n"
-
 $Group = Read-Host "Gruppenname eingeben"
 
-$checkgr = Get-ADGroup -Identity $Group
+$checkgr = Get-ADGroup -Identity $Group -ErrorAction SilentlyContinue
 
 if ($null -eq $checkgr) {
     Write-Host "Gruppe existiert schon!"
@@ -167,49 +166,52 @@ switch ($kurs) {
         $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $upath = "OU=User,OU=Firmenschulung,OU=Academy,DC=academy,DC=local"
         $msolicense = "reseller-account:" # Insert AccountSku here
-        Write-Host "FI"
+        Write-Host "Fachinformatiker"
      }
      "office"{
 
         $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $upath = "OU=User,OU=Firmenschulung,OU=Academy,DC=academy,DC=local"
-        $msolicense = "reseller-account:" # Insert AccountSku here
+        $msolicense = "reseller-account:O365_BUSINESS_PREMIUM"
+        Write-Host "Office-Kurs"
 
      }
      "traini"{
 
-        $upath = "OU=Trainer,OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local" # not sure correct later if given
-        $msolicense = "reseller-account:" # Insert AccountSku here
+        $upath = "OU=Trainer,OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local" 
+        $msolicense = "reseller-account:TEAMS_EXPLORATORY"
+        Write-Host "Trainer" 
 
      }
     Default {
         Write-Error -Message "Nicht unterstützte Gruppenangabe"
     }
 }
+New-Team -DisplayName $Group -Owner "admin@lug-ag.de" -Visibility Private
 New-ADGroup -DisplayName $Group -GroupScope Universal -Path $grpath -Name $Group
 Add-ADGroupMember -Identity "ACL_VMM_Users" -Members $Group
 
 foreach ($usi in $users){
 
-    $user.Name = $user.Name.replace("ü","ue")
-    $user.Name = $user.Name.replace("Ü","Ue")
-    $user.Name = $user.Name.replace("ö","oe")
-    $user.Name = $user.Name.replace("Ö","Oe")
-    $user.Name = $user.Name.replace("ä","ae")
-    $user.Name = $user.Name.replace("Ä","Ae")
-    $user.Name = $user.Name.replace("ß","ss")
-    $user.Name = $user.Name.replace("é","e")
-    $user.Name = $user.Name.replace(" ","-")
+    $usi.Name = $usi.Name.replace("ü","ue")
+    $usi.Name = $usi.Name.replace("Ü","Ue")
+    $usi.Name = $usi.Name.replace("ö","oe")
+    $usi.Name = $usi.Name.replace("Ö","Oe")
+    $usi.Name = $usi.Name.replace("ä","ae")
+    $usi.Name = $usi.Name.replace("Ä","Ae")
+    $usi.Name = $usi.Name.replace("ß","ss")
+    $usi.Name = $usi.Name.replace("é","e")
+    $usi.Name = $usi.Name.replace(" ","-")
 
-    $user.Vorname = $user.Vorname.replace("ü","ue")
-    $user.Vorname = $user.Vorname.replace("Ü","Ue")
-    $user.Vorname = $user.Vorname.replace("ö","oe")
-    $user.Vorname = $user.Vorname.replace("Ö","Oe")
-    $user.Vorname = $user.Vorname.replace("ä","ae")
-    $user.Vorname = $user.Vorname.replace("Ä","Ae")
-    $user.Vorname = $user.Vorname.replace("ß","ss")
-    $user.Vorname = $user.Vorname.replace("é","e")
-    $user.Vorname = $user.Vorname.replace(" ","-")
+    $usi.Vorname = $usi.Vorname.replace("ü","ue")
+    $usi.Vorname = $usi.Vorname.replace("Ü","Ue")
+    $usi.Vorname = $usi.Vorname.replace("ö","oe")
+    $usi.Vorname = $usi.Vorname.replace("Ö","Oe")
+    $usi.Vorname = $usi.Vorname.replace("ä","ae")
+    $usi.Vorname = $usi.Vorname.replace("Ä","Ae")
+    $usi.Vorname = $usi.Vorname.replace("ß","ss")
+    $usi.Vorname = $usi.Vorname.replace("é","e")
+    $usi.Vorname = $usi.Vorname.replace(" ","-")
 
 Generate-Password
 
@@ -217,26 +219,29 @@ Generate-Password
 Create-User -User $usi
 
 if ($kurs -eq "y") {
-    New-VMMRole -User $sam -art "f"
+    New-VMMRole -User $script:sam -art "f"
 }elseif ($kurs -ne "n" -and $ondeso -eq "y"){
     $urole = Get-SCUserRole -Name "Ondeso B" 
     $members = $urole.Members
+    $refrurole = Read-Host "Sollen vorherige Mitglieder aus der Benutzerrolle entfernt werden? y/n"
 
-    foreach ($member in $members) {
-
+    if ($refrurole -eq "y") {
+        
+     foreach ($member in $members) {
         Set-SCUserRole -UserRole $urole -RemoveMember $member.Name
+    } 
     }
-    New-VMMRole -User $sam -art "o"
+    New-VMMRole -User $script:sam -art "o"
 }
 
 # Azure/M365 creation
-New-Team -DisplayName $Group -Owner "admin@lug-ag.de" -Visibility Private
-New-MsolUser -UserPrincipalName $UPN -FirstName $usi.vorname -LastName $usi.name -DisplayName $sam -Password $pw -LicenseAssignment "reseller-account:TEAMS_EXPLORATORY" -UsageLocation "DE"
-sleep 10
-Get-Team | where DisplayName -eq $Group |Add-TeamUser -User $UPN ## Hinzufügen funktioniert nicht
+New-MsolUser -UserPrincipalName $script:UPN -FirstName $usi.vorname -LastName $usi.name -DisplayName $script:sam.Replace("."," ") -Password $script:pw -UsageLocation "DE" 
+Set-MsolUserLicense -UserPrincipalName $script:UPN -AddLicenses $msolicense
+sleep 5
+Get-Team | where DisplayName -eq $Group |Add-TeamUser -User $script:UPN
 
 if (Test-Credentials -eq "OK") {
-    "$UPN;$pwgen" >> "$dateipfad\Userlists\$Group.csv"
+    "$script:UPN;$script:pwgen" >> "$dateipfad\Userlists\$Group.csv"
 }else{
     Write-Error -Message "Nutzerdaten konnten nicht validiert werden"
 }
