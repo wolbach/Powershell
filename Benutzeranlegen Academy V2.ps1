@@ -84,10 +84,22 @@ function Create-User {
         $User
     )
 
+    f($User.Vorname.length + $Uers.Name.Length + 1 -gt 20){
+        $User.Vorname = $User.Vorname.remove(1)
+        $User.Name = $User.Name
+ 
+
+        if($User.Vorname.length + $User.Name.Length + 1 -gt 20){
+            $User.Name = $User.Name.Remove(18)
+        }
+
+    } 
+
     $script:UPN = ($User.vorname+"."+$User.name)+"@academy.local"
+    $script:msolupn = ($User.vorname+"."+$User.name)+"@training.lug-ag.de"
     $script:sam = $User.vorname + "." + $User.name
 
-    New-ADUser -AccountPassword $script:pw -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $script:UPN -DisplayName $script:sam.Replace("."," ") -Name $script:sam -SurName $Name -GivenName $Vorname -Path $upath
+    New-ADUser -AccountPassword $script:pw -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $script:UPN -DisplayName $script:sam.Replace("."," ") -Name $script:sam -SurName $User.Nachname -GivenName $User.Vorname -Path $upath
     Add-ADGroupMember -Identity $Group -Members $script:sam
 }
 
@@ -141,18 +153,26 @@ Write-Host -ForegroundColor Red "Überprüfen, ob genug Lizenzen verfügbar sind
 
 $Group = Read-Host "Gruppenname eingeben"
 
-$checkgr = Get-ADGroup -Identity $Group -ErrorAction SilentlyContinue
+try {
+    (Get-ADGroup -Identity $Group -ErrorAction SilentlyContinue -or Get-MsolGroup)
 
-if ($null -eq $checkgr) {
-    Write-Host "Gruppe existiert schon!"
+}
+catch {
+    Write-Host "Gruppe existiert schon"
+    $cont = Read-Host "Trotzdem fortfahren? y/n"
+    if ($cont -eq "y") {
+        exit
+    }
 }
 
 if ($Group.contains("Ondeso")) {
     $kurs = "o"
-}elseif ($Group.contains("FI")) {
+}elseif ($Group.contains("FI U")) {
     $kurs = "fi"
-}elseif ($Group.Contains("DOM") -or $Group.Contains("PPDT") -or $Group.Contains("E-Com")){
+}elseif ($Group.Contains("PPDT") -or $Group.Contains("E-Com")){
     $kurs = "office"
+}elseif ($Group.Contains("DOM")){
+    $kurs = "dom"
 }elseif ($Group -eq "Trainers" -or "UG_Trainer") {
     $kurs = "traini"
 }
@@ -163,14 +183,16 @@ switch ($kurs) {
         $grpath = "OU=Groups,OU=Firmenschulung,OU=Academy,DC=academy,DC=local" 
         $upath = "OU=User,OU=Firmenschulung,OU=Academy,DC=academy,DC=local"
         $msolicense = "reseller-account:TEAMS_EXPLORATORY"
+        $laufzeit = 35
         Write-Host "Ondeso"
 
     }
     "fi"{ 
 
         $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
-        $upath = "OU=User,OU=Firmenschulung,OU=Academy,DC=academy,DC=local"
-        $msolicense = "reseller-account:" # Insert AccountSku here
+        $upath = "OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local"
+        $msolicense = "reseller-account:O365_BUSINESS_ESSENTIALS" 
+        $laufzeit = 730
         Write-Host "Fachinformatiker"
      }
      "office"{
@@ -178,13 +200,24 @@ switch ($kurs) {
         $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $upath = "OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $msolicense = "reseller-account:O365_BUSINESS_PREMIUM"
+        $laufzeit = 730
         Write-Host "Office-Kurs"
 
+     }
+     "dom"{
+        $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
+        $upath = "OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local"
+        $msolicense = "reseller-account:O365_BUSINESS_PREMIUM"
+        $Group = "DOM 365 Onboarding"
+        $laufzeit = 130
+        Write-Host "DOM"
+        
      }
      "traini"{
 
         $upath = "OU=Trainer,OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local" 
         $msolicense = "reseller-account:TEAMS_EXPLORATORY"
+        $laufzeit
         Write-Host "Trainer" 
 
      }
@@ -236,18 +269,18 @@ if ($kurs -eq "y") {
         Set-SCUserRole -UserRole $urole -RemoveMember $member.Name
     } 
     }
-    New-VMMRole -User $script:sam -art "o"
+    #New-VMMRole -User $script:sam -art "o"
 }
 
 # Azure/M365 creation
-New-MsolUser -UserPrincipalName $script:UPN -FirstName $usi.vorname -LastName $usi.name -DisplayName $script:sam.Replace("."," ") -Password $script:pw -UsageLocation "DE" 
-Set-MsolUserLicense -UserPrincipalName $script:UPN -AddLicenses $msolicense
+New-MsolUser -UserPrincipalName $script:msolupn -FirstName $usi.vorname -LastName $usi.name -DisplayName $script:sam.Replace("."," ") -Password $script:pw -UsageLocation "DE" 
+Set-MsolUserLicense -UserPrincipalName $script:msolupn -AddLicenses $msolicense
 sleep 5
 $grid = Get-Team | where DisplayName -eq $Group | select GroupID
-Add-TeamUser -GroupId $grid.GroupId -User $script:UPN 
+Add-TeamUser -GroupId $grid.GroupId.ToString() -User $script:UPN 
 
 if (Test-Credentials -eq "OK") {
-    "$script:UPN;$script:pwgen" >> "$dateipfad\Userlists\$Group.csv"
+    "$script:msolupn;$script:sam;$script:pwgen" >> "$dateipfad\Userlists\$Group.csv"
 }else{
     Write-Error -Message "Nutzerdaten konnten nicht validiert werden"
 }
