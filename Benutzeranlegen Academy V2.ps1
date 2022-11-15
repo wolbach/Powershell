@@ -84,7 +84,7 @@ function Create-User {
         $User
     )
 
-    f($User.Vorname.length + $Uers.Name.Length + 1 -gt 20){
+    if($User.Vorname.length + $Uers.Name.Length + 1 -gt 20){
         $User.Vorname = $User.Vorname.remove(1)
         $User.Name = $User.Name
  
@@ -99,7 +99,7 @@ function Create-User {
     $script:msolupn = ($User.vorname+"."+$User.name)+"@training.lug-ag.de"
     $script:sam = $User.vorname + "." + $User.name
 
-    New-ADUser -AccountPassword $script:pw -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $script:UPN -DisplayName $script:sam.Replace("."," ") -Name $script:sam -SurName $User.Nachname -GivenName $User.Vorname -Path $upath
+    New-ADUser -AccountPassword $script:pw -Enabled $true -ChangePasswordAtLogon $false -OtherAttributes @{accountExpires=$exp.AddDays($dauer);uid=$UPN} -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $script:UPN -DisplayName $script:sam.Replace("."," ") -Name $script:sam -SurName $User.Nachname -GivenName $User.Vorname -Path $upath  -OtherAttributes @{accountExpires=$exp.AddDays($dauer);uid=$UPN}
     Add-ADGroupMember -Identity $Group -Members $script:sam
 }
 
@@ -160,7 +160,7 @@ try {
 catch {
     Write-Host "Gruppe existiert schon"
     $cont = Read-Host "Trotzdem fortfahren? y/n"
-    if ($cont -eq "y") {
+    if ($cont -eq "n") {
         exit
     }
 }
@@ -269,7 +269,7 @@ if ($kurs -eq "y") {
         Set-SCUserRole -UserRole $urole -RemoveMember $member.Name
     } 
     }
-    #New-VMMRole -User $script:sam -art "o"
+    New-VMMRole -User $script:sam -art "o"
 }
 
 # Azure/M365 creation
