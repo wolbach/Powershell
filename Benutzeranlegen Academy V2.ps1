@@ -35,10 +35,14 @@ function New-VMMRole {
         $vmNetwork = New-SCVMNetwork -AutoCreateSubnet -Name $Switch5 -LogicalNetwork $logicalNetwork -Description $User.SamAccountName
         Set-SCVMNetwork -VMNetwork $vmNetwork -RunAsynchronously -Owner $TRKonto -UserRole $userRole
 
+        $vmInternet = Get-SCVMNetwork -Name "Internet"
+        Grant-SCResource -Resource $vmInternet -UserRoleName $script:sam
+
         $libResource = Get-SCVMTemplate -Name "Windows 10 21H2"
         Grant-SCResource -VMMServer $vmm -Resource $libResource -UserRoleName $script:sam
-        $libResource = Get-SCVMTemplate -Name "Windows Server 2022 Standard (Desktop Experience)"
+        $libResource = Get-SCVMTemplate -Name "Windows Server 2022"
         Grant-SCResource -VMMServer $vmm -Resource $libResource -UserRoleName $script:sam
+
     } elseif ($art -eq "o") {
 
         $Cloud = Get-SCCloud "Ondeso Training"
@@ -98,8 +102,9 @@ function Create-User {
     $script:UPN = ($User.vorname+"."+$User.name)+"@academy.local"
     $script:msolupn = ($User.vorname+"."+$User.name)+"@training.lug-ag.de"
     $script:sam = $User.vorname + "." + $User.name
+    $name = $User.vorname + " " + $User.name
 
-    New-ADUser -AccountPassword $script:pw -Enabled $true -ChangePasswordAtLogon $false -OtherAttributes @{accountExpires=$exp.AddDays($dauer);uid=$UPN} -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $script:UPN -DisplayName $script:sam.Replace("."," ") -Name $script:sam -SurName $User.Nachname -GivenName $User.Vorname -Path $upath  -OtherAttributes @{accountExpires=$exp.AddDays($dauer);uid=$UPN}
+    New-ADUser -AccountPassword $script:pw -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $script:UPN -DisplayName $name -Name $name -SurName $User.Nachname -GivenName $User.Vorname -Path $upath -SamAccountName $script:sam -OtherAttributes @{accountExpires=$exp.AddDays($laufzeit);uid=$UPN}
     Add-ADGroupMember -Identity $Group -Members $script:sam
 }
 
@@ -139,6 +144,8 @@ $dateipfad = "C:\Skripte\"
 $users = Import-Csv -Delimiter ";" -LiteralPath "$dateipfad\user.csv"
 $Group = $null
 $kurs = $null
+$cont = $null
+$exp = Get-Date
 
 # Connecting Services
 try {
@@ -160,9 +167,17 @@ try {
 catch {
     Write-Host "Gruppe existiert schon"
     $cont = Read-Host "Trotzdem fortfahren? y/n"
-    if ($cont -eq "n") {
-        exit
+}
+
+switch ($cont) {
+    "n" { 
+        exit 
     }
+    $null { 
+        New-ADGroup -DisplayName $Group -GroupScope Universal -Path $grpath -Name $Group 
+        New-Team -DisplayName $Group -Owner "admin@lug-ag.de" -Visibility Private
+    }
+    Default {}
 }
 
 if ($Group.contains("Ondeso")) {
@@ -217,16 +232,15 @@ switch ($kurs) {
 
         $upath = "OU=Trainer,OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local" 
         $msolicense = "reseller-account:TEAMS_EXPLORATORY"
-        $laufzeit
+        $laufzeit = 1
         Write-Host "Trainer" 
 
      }
     Default {
-        Write-Error -Message "Nicht unterstützte Gruppenangabe"
+        Write-Error -Message "Nicht unterstützte Gruppenangabe" -Category InvalidType 
     }
 }
-New-Team -DisplayName $Group -Owner "admin@lug-ag.de" -Visibility Private
-New-ADGroup -DisplayName $Group -GroupScope Universal -Path $grpath -Name $Group
+
 Add-ADGroupMember -Identity "ACL_VMM_Users" -Members $Group
 
 foreach ($usi in $users){
