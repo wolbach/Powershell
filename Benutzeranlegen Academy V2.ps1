@@ -47,7 +47,6 @@ function New-VMMRole {
 
         $Cloud = Get-SCCloud "Ondeso Training"
 
-        $ACADuser = "ACADEMY\"+$User
         $JobGroupID = [Guid]::NewGuid().ToString()
         Get-SCUserRole -Name "Ondeso B" | Set-SCUserRole -AddMember $Group -AddScope $Cloud -Permission @("AllowLocalAdmin", "RemoteConnect", "Start") -ShowPROTips $false -VMNetworkMaximumPerUser "2" -VMNetworkMaximum "2"
     
@@ -88,15 +87,13 @@ function Create-User {
         $User
     )
 
-    if($User.Vorname.length + $Uers.Name.Length + 1 -gt 20){
-        $User.Vorname = $User.Vorname.remove(1)
+    if($User.Vorname.length + $User.Name.Length + 1 -ge 20){
+        $User.Vorname = $User.Vorname.Remove(1)
         $User.Name = $User.Name
- 
 
         if($User.Vorname.length + $User.Name.Length + 1 -gt 20){
             $User.Name = $User.Name.Remove(18)
         }
-
     } 
 
     $script:UPN = ($User.vorname+"."+$User.name)+"@academy.local"
@@ -182,13 +179,15 @@ switch ($cont) {
 
 if ($Group.contains("Ondeso")) {
     $kurs = "o"
-}elseif ($Group.contains("FI U")) {
+}elseif ($Group.contains("FI U")){
     $kurs = "fi"
-}elseif ($Group.Contains("PPDT") -or $Group.Contains("E-Com")){
-    $kurs = "office"
+}elseif ($Group.Contains("PPDT")){
+    $kurs = "pp"
 }elseif ($Group.Contains("DOM")){
     $kurs = "dom"
-}elseif ($Group -eq "Trainers" -or "UG_Trainer") {
+}elseif ($Group.Contains("E-Com")){
+    $kurs = "ecom"
+}elseif ($Group -eq "Trainers" -or "UG_Trainer"){
     $kurs = "traini"
 }
 
@@ -210,7 +209,7 @@ switch ($kurs) {
         $laufzeit = 730
         Write-Host "Fachinformatiker"
      }
-     "office"{
+     "ecom"{
 
         $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $upath = "OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local"
@@ -234,6 +233,15 @@ switch ($kurs) {
         $msolicense = "reseller-account:TEAMS_EXPLORATORY"
         $laufzeit = 1
         Write-Host "Trainer" 
+
+     }
+     "pp"{
+
+        $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
+        $upath = "OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local"
+        $msolicense = "reseller-account:INTUNE_A_D"
+        $laufzeit = 180
+        Write-Host "PePe"
 
      }
     Default {
@@ -270,9 +278,9 @@ Generate-Password
 # On-premise creation
 Create-User -User $usi
 
-if ($kurs -eq "y") {
+if ($kurs -eq "fi") {
     New-VMMRole -User $script:sam -art "f"
-}elseif ($kurs -ne "n" -and $ondeso -eq "y"){
+}elseif ($kurs -eq "o"){
     $urole = Get-SCUserRole -Name "Ondeso B" 
     $members = $urole.Members
     $refrurole = Read-Host "Sollen vorherige Mitglieder aus der Benutzerrolle entfernt werden? y/n"
@@ -289,14 +297,12 @@ if ($kurs -eq "y") {
 # Azure/M365 creation
 New-MsolUser -UserPrincipalName $script:msolupn -FirstName $usi.vorname -LastName $usi.name -DisplayName $script:sam.Replace("."," ") -Password $script:pw -UsageLocation "DE" 
 Set-MsolUserLicense -UserPrincipalName $script:msolupn -AddLicenses $msolicense
-sleep 5
-$grid = Get-Team | where DisplayName -eq $Group | select GroupID
-Add-TeamUser -GroupId $grid.GroupId.ToString() -User $script:UPN 
+sleep 10
+Get-Team | where DisplayName -eq $Group | Add-TeamUser -User $script:msolupn
 
 if (Test-Credentials -eq "OK") {
     "$script:msolupn;$script:sam;$script:pwgen" >> "$dateipfad\Userlists\$Group.csv"
 }else{
     Write-Error -Message "Nutzerdaten konnten nicht validiert werden"
 }
-
 }
