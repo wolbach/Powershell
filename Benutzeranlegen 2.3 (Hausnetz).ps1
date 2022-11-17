@@ -24,7 +24,13 @@
   
  ### Variablen
 
- Connect-MsolService
+ try {
+    Get-MsolDomain -ErrorAction Stop > $null
+}
+catch {
+    Connect-MsolService
+    Connect-MicrosoftTeams
+}
 
  $user = $null
  $Vorname = $null
@@ -50,7 +56,6 @@
  $user = $null
  $LO = $null
  $aktiv = $null
- $ablaufdatum = $null
  $anrede = $null
  $daimler = $null
  $insertquery2 = $null
@@ -69,25 +74,37 @@
      
      $aktiv = Read-Host -Prompt "Soll Account aktiv sein? y/n"
     
-     $Vorname = $Vorname -replace "ä", "ae"
-     $Vorname = $Vorname -replace "ö", "oe"
-     $Vorname = $Vorname -replace "ü", "ue"
-     $Vorname = $Vorname -replace "ß", "ss"
-     $Nachname = $Nachname -replace "ä", "ae"
-     $Nachname = $Nachname -replace "ö", "oe"
-     $Nachname = $Nachname -replace "ü", "ue"
-     $Nachname = $Nachname -replace "ß", "ss"
-     $beschreibung = $beschreibung -replace "ä", "ae"
-     $beschreibung = $beschreibung -replace "ö", "oe"
-     $beschreibung = $beschreibung -replace "ü", "ue"
-     $beschreibung = $beschreibung -replace "ß", "ss"
+    $Nachname = $Nachname.replace("ü","ue")
+    $Nachname = $Nachname.replace("Ü","Ue")
+    $Nachname = $Nachname.replace("ö","oe")
+    $Nachname = $Nachname.replace("Ö","Oe")
+    $Nachname = $Nachname.replace("ä","ae")
+    $Nachname = $Nachname.replace("Ä","Ae")
+    $Nachname = $Nachname.replace("ß","ss")
+    $Nachname = $Nachname.replace("é","e")
+    $Nachname = $Nachname.replace(" ","-")
+
+    $Vorname = $Vorname.replace("ü","ue")
+    $Vorname = $Vorname.replace("Ü","Ue")
+    $Vorname = $Vorname.replace("ö","oe")
+    $Vorname = $Vorname.replace("Ö","Oe")
+    $Vorname = $Vorname.replace("ä","ae")
+    $Vorname = $Vorname.replace("Ä","Ae")
+    $Vorname = $Vorname.replace("ß","ss")
+    $Vorname = $Vorname.replace("é","e")
+    $Vorname = $Vorname.replace(" ","-")
+
+     $beschreibung = $beschreibung.Replace("ä", "ae")
+     $beschreibung = $beschreibung.Replace("ö", "oe")
+     $beschreibung = $beschreibung.Replace("ü", "ue")
+     $beschreibung = $beschreibung.Replace("ß", "ss")
      
   
  
      while( $daimler -ne "0" -and $daimler -ne "1"){
   
  
-     $daimler = Read-Host -Prompt " Daimler support? Wählen Sie eine Kategorie aus:(1 = Ja / 0 = Nein)"
+     $daimler = Read-Host -Prompt " Daimler support? (y/n)"
  
          switch($daimler){
              1 {Write-Host "Daimler Support: JA"}
@@ -99,23 +116,21 @@
      $Nachname
      $beschreibung
  
-     $Benutzername = $Vorname.Substring(0,1) 
-     $Benutzername = "$Benutzername$Nachname"
-     $abfragename = $Vorname + " " + $Nachname
+     $Benutzername = ($Vorname.Substring(0,1) + $Nachname).ToLower() 
+     $dis = $Vorname + " " + $Nachname
+     $upn = $Benutzername+"@lutzundgrub.de"
      
- 
-     $Benutzername = $Benutzername.ToLower()
      $fullPath = "\\LGKA-AWFS003\Homelaufwerke\$Benutzername"
      Write-Host $Benutzername
      
-     $richtig = read-host -Prompt "Sind die Eingaben Richtig (j/n)"
+     $richtig = read-host -Prompt "Sind die Eingaben Richtig (y/n)"
  
  
   
  
  }while ($richtig -eq "n")
  
- while( $abteilung -ne "1" -and $abteilung -ne "2" -and $abteilung -ne "3" -and $abteilung -ne "4" -and $abteilung -ne "5" -and $abteilung -ne "6" -and $abteilung -ne "7" -and $abteilung -ne "8" -and $abteilung -ne "9" -and $abteilung -ne "10"){
+ while( $null -eq $abteilung ){
  
      write-host "1 = Schuelerpraktikant / Externer Benutzer"
      write-host "2 = normaler Mitarbeiter / Praktikanten / Daimler"
@@ -193,9 +208,8 @@
       
  ### Anweisungen
  
- $dis = $Vorname + " " + $Nachname
  $ou = 'OU=Benutzer,OU=LutzundGrub,DC=lg,DC=local'
- New-ADUser -HomeDrive $driveletter -HomeDirectory $fullPath -ChangePasswordAtLogon $false -PasswordNeverExpires $true -Name $abfragename -DisplayName $dis -Path $ou -SamAccountName $Benutzername -GivenName $Vorname -Surname $Nachname  –AccountPassword (ConvertTo-Securestring “P@ssword” –asplaintext –Force) -Enabled $true -UserPrincipalName ($Benutzername + "@lutzundgrub.de") 
+ New-ADUser -HomeDrive $driveletter -HomeDirectory $fullPath -ChangePasswordAtLogon $false -PasswordNeverExpires $true -Name $dis -DisplayName $dis -Path $ou -SamAccountName $Benutzername -GivenName $Vorname -Surname $Nachname  –AccountPassword (ConvertTo-Securestring “P@ssword” –asplaintext –Force) -Enabled $true -UserPrincipalName ($Benutzername + "@lutzundgrub.de") 
  $homeshare = New-Item -Path $fullPath -ItemType Directory -Force
  $acl = Get-Acl $homeshare
  $user = Get-ADUser -Identity $Benutzername
@@ -218,7 +232,7 @@
  $weitere = read-host -Prompt "Sollen weitere Gruppen hinzugefuegt werden J/N"
  
  
- if($weitere -eq "J" -or $weitere -eq "j"){
+ while ($weitere -eq "j"){
    
    while ($weitere -eq "J" -or $weitere -eq "j") {
        $g = read-host -Prompt "Gruppennamen eingeben"
@@ -237,14 +251,11 @@
  ###Exchange postfach anlegen
  $Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri http://lgka-ex004/PowerShell/
  Import-PSSession $Session
- Get-User -RecipientTypeDetails User | where name -eq "$abfragename" | Enable-Mailbox -Alias $Benutzername
+ Get-User -RecipientTypeDetails User | where name -eq $Benutzername | Enable-Mailbox -Alias $Benutzername
  Remove-PSSession $Session
- 
+ ## Hier versuchen die Migration zu automatisieren
  
  ###Office365 LG Ankündigungen, Lutz und Grub, warten auf Sync
- 
- #Import-Module MsOnline
- #Connect-MsolService
  
  Write-Host "warten auf Office 365 Sync in min (Kann bis zu 35min Dauern)"
  
@@ -265,13 +276,13 @@
  Import-PSSession $exchangeSession
  Sleep 10
  $ErrorActionPreference = "SilentlyContinue"
- Add-DistributionGroupMember -Identity "LG-Ankündigung" -Member "$Benutzername@lutzundgrub.de"
+ Add-DistributionGroupMember -Identity "LG-Ankündigung" -Member $upn
  Remove-PSSession $exchangeSession
  ## Funktioniert nicht so wie es sollte
  
  ### Lizenzen verwalten
  $LO = New-MsolLicenseOptions -AccountSkuId "lutzundgrub:ENTERPRISEPACK"
- Set-MsolUser -UserPrincipalName "$Benutzername@lutzundgrub.de" -UsageLocation DE
+ Set-MsolUser -UserPrincipalName $upn -UsageLocation DE
  Set-MsolUserLicense -UserPrincipalName $Benutzername@lutzundgrub.de -AddLicenses "lutzundgrub:SPE_E3" -LicenseOptions $LO
  ## Überprüfen, ob Lizenz AccountSkuID noch richtig ist
  
@@ -286,12 +297,8 @@
  if ($aktiv -eq "N" -or $aktiv -eq "n" ) {
  Set-ADUser -Identity $Benutzername -Enabled 0
  }
- 
- 
- 
+
  Get-AdUser -filter "name -eq '$dis'" -Properties AccountExpirationDate
- 
- 
  
  $b = Get-AdUser  -filter "name -eq '$dis'" -Properties MemberOf | Select-Object -ExpandProperty MemberOf
  
