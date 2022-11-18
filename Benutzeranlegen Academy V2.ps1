@@ -46,6 +46,17 @@ function New-VMMRole {
     } elseif ($art -eq "o") {
 
         $Cloud = Get-SCCloud "Ondeso Training"
+        $urole = Get-SCUserRole -Name "Ondeso B" 
+        $members = $urole.Members
+
+        $remurole = Read-Host "Sollen vorherige Mitglieder aus der Benutzerrolle entfernt werden? y/n"
+
+        if ($remurole -eq "y") {
+            
+        foreach ($member in $members) {
+            Set-SCUserRole -UserRole $urole -RemoveMember $member.Name
+        } 
+        }
 
         $JobGroupID = [Guid]::NewGuid().ToString()
         Get-SCUserRole -Name "Ondeso B" | Set-SCUserRole -AddMember $Group -AddScope $Cloud -Permission @("AllowLocalAdmin", "RemoteConnect", "Start") -ShowPROTips $false -VMNetworkMaximumPerUser "2" -VMNetworkMaximum "2"
@@ -240,7 +251,7 @@ switch ($kurs) {
         $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $upath = "OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $msolicense = "reseller-account:INTUNE_A_D"
-        $laufzeit = 180
+        $laufzeit = 190
         Write-Host "PePe"
 
      }
@@ -279,19 +290,13 @@ Generate-Password
 Create-User -User $usi
 
 if ($kurs -eq "fi") {
-    New-VMMRole -User $script:sam -art "f"
-}elseif ($kurs -eq "o"){
-    $urole = Get-SCUserRole -Name "Ondeso B" 
-    $members = $urole.Members
-    $refrurole = Read-Host "Sollen vorherige Mitglieder aus der Benutzerrolle entfernt werden? y/n"
 
-    if ($refrurole -eq "y") {
-        
-     foreach ($member in $members) {
-        Set-SCUserRole -UserRole $urole -RemoveMember $member.Name
-    } 
-    }
+    New-VMMRole -User $script:sam -art "f"
+
+}elseif ($kurs -eq "o"){
+    
     New-VMMRole -User $script:sam -art "o"
+
 }
 
 # Azure/M365 creation
@@ -303,6 +308,6 @@ Get-Team | where DisplayName -eq $Group | Add-TeamUser -User $script:msolupn
 if (Test-Credentials -eq "OK") {
     "$script:msolupn;$script:sam;$script:pwgen" >> "$dateipfad\Userlists\$Group.csv"
 }else{
-    Write-Error -Message "Nutzerdaten konnten nicht validiert werden"
+    Write-Error -Message "Nutzerdaten von $sam konnten nicht validiert werden"
 }
 }
