@@ -147,6 +147,38 @@ function Test-Credentials {
     }
 }
 
+function Validate-License {
+    param (
+        $AccSku
+    )
+
+    # Check License naming
+
+    $mslicenses = Get-MsolAccountSku 
+
+    $comp = Compare-Object -ReferenceObject $AccSku -DifferenceObject $msolicense -IncludeEqual
+    
+    if ($comp.SideIndicator -eq "==") {
+        Write-Host "Msol-License is valid"
+
+        $mslicense = Get-MsolAccountSku | where AccountSkuID -eq $msolicense
+        $TNcount = $Users.Count
+        $maxLicen = $mslicense.ActiveUnits
+        $usedLicen = $mslicense.ConsumedUnits
+
+        if (($usedLicen + $TNcount) -gt $maxLicen) {
+            Write-Host -ForegroundColor Red "Nicht genügend Lizenzen verfügbar"
+            Read-Host "Mit Enter fortfahren, wenn Lizenzen gekauft wurden"
+        }elseif (($usedLicen + $TNcount) -lt $maxLicen) {
+            Write-Host "Genügend Lizenzen vorhanden"
+        }
+    }else {
+        Write-Error -Message "Angegebene Lizenz ist ungültig!"
+        exit
+    }
+
+}
+
 $users = $null
 $dateipfad = "C:\Skripte\"
 $users = Import-Csv -Delimiter ";" -LiteralPath "$dateipfad\user.csv"
