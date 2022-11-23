@@ -3,9 +3,10 @@ function New-VMMRole {
         $User,
         $art
     )
-    $script:sam = $User.SamAccountName
     $TRKonto = "ACADEMY\"+$script:sam
     
+    Get-SCVMMServer "vmm01"
+
     if ($art -eq "f") {
     
     $scopeToAdd = @()
@@ -60,7 +61,7 @@ function New-VMMRole {
 
         $JobGroupID = [Guid]::NewGuid().ToString()
         Get-SCUserRole -Name "Ondeso B" | Set-SCUserRole -AddMember $Group -AddScope $Cloud -Permission @("AllowLocalAdmin", "RemoteConnect", "Start") -ShowPROTips $false -VMNetworkMaximumPerUser "2" -VMNetworkMaximum "2"
-    
+        #return 1
     }else{
     return "unexpected string has been received"
     }
@@ -88,31 +89,30 @@ function Generate-Password {
             $script:pw = ConvertTo-SecureString -AsPlainText $script:pwgen -Force
         }
 
-
+        #return $pw
     }
   
 }
 
 function Create-User {
     param (
-        $User
     )
 
-    if($User.Vorname.length + $User.Name.Length + 1 -ge 20){
-        $User.Vorname = $User.Vorname.Remove(1)
-        $User.Name = $User.Name
+    if($usi.Vorname.length + $usi.Name.Length + 1 -ge 20){
+        $usi.Vorname = $usi.Vorname.Remove(1)
+        $usi.Name = $usi.Name
 
-        if($User.Vorname.length + $User.Name.Length + 1 -gt 20){
-            $User.Name = $User.Name.Remove(18)
+        if($usi.Vorname.length + $usi.Name.Length + 1 -gt 20){
+            $usi.Name = $usi.Name.Remove(18)
         }
     } 
 
-    $script:UPN = ($User.vorname+"."+$User.name)+"@academy.local"
-    $script:msolupn = ($User.vorname+"."+$User.name)+"@training.lug-ag.de"
-    $script:sam = $User.vorname + "." + $User.name
-    $name = $User.vorname + " " + $User.name
+    $script:UPN = ($usi.vorname+"."+$usi.name)+"@academy.local"
+    $script:msolupn = ($usi.vorname+"."+$usi.name)+"@training.lug-ag.de"
+    $script:sam = $usi.vorname + "." + $usi.name
+    $name = $usi.vorname + " " + $usi.name
 
-    New-ADUser -AccountPassword $script:pw -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $script:UPN -DisplayName $name -Name $name -SurName $User.Nachname -GivenName $User.Vorname -Path $upath -SamAccountName $script:sam -OtherAttributes @{accountExpires=$exp.AddDays($laufzeit);uid=$UPN}
+    New-ADUser -AccountPassword $script:pw -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $script:UPN -DisplayName $name -Name $name -SurName $Usi.Name -GivenName $Usi.Vorname -Path $upath -SamAccountName $script:sam -OtherAttributes @{accountExpires=$exp.AddDays($laufzeit);uid=$UPN}
     Add-ADGroupMember -Identity $Group -Members $script:sam
 }
 
@@ -133,10 +133,23 @@ function Test-Credentials {
     # Planned for 2.1: Msol Credential validation
 <#     $valrunspace = [powershell]::Create()
 
-    [void]$valrunspace.AddScript({
-        param ($script:pw, $script:UPN)
+    $ParamList = @{
+        PW = $script:pw
+        UPN = $script:UPN
+    }
 
-    }).AddArgument($script:pw).AddArgument($script:UPN)
+    [void]$valrunspace.AddScript({
+        param ($PW, $UPN)
+
+        $creds = New-Object System.Management.Automation.PSCredential -ArgumentList ($UPN, $PW)
+        $cred = Get-Credential -credential $creds
+        try{
+            Connect-MsolService -Credential $creds
+        } catch {
+            $return = "Msol-Authentifizierung fehlgeschlagen"
+        }
+
+    }).AddParameters($ParamList)
 
     $valrunspace.Close() #>
 
@@ -159,7 +172,6 @@ function Validate-License {
     $comp = Compare-Object -ReferenceObject $AccSku -DifferenceObject $msolicense -IncludeEqual
     
     if ($comp.SideIndicator -eq "==") {
-        Write-Host "Msol-License is valid"
 
         $mslicense = Get-MsolAccountSku | where AccountSkuID -eq $msolicense
         $TNcount = $Users.Count
@@ -177,6 +189,7 @@ function Validate-License {
         exit
     }
 
+    
 }
 
 $users = $null
@@ -186,6 +199,7 @@ $Group = $null
 $kurs = $null
 $cont = $null
 $exp = Get-Date
+$pwgen = $null
 
 # Connecting Services
 try {
@@ -196,17 +210,14 @@ catch {
     Connect-MicrosoftTeams
 }
 
-Write-Host -ForegroundColor Red "Überprüfen, ob genug Lizenzen verfügbar sind!"
-
 $Group = Read-Host "Gruppenname eingeben"
 
-try {
-    (Get-ADGroup -Identity $Group -ErrorAction SilentlyContinue -or Get-MsolGroup)
-
-}
-catch {
+$Grget = Get-ADGroup -Identity $Group
+if ($Grget.Name -eq $Group) {
     Write-Host "Gruppe existiert schon"
     $cont = Read-Host "Trotzdem fortfahren? y/n"
+}else {
+    Write-Host "Gruppe ist frei"
 }
 
 switch ($cont) {
@@ -232,6 +243,8 @@ if ($Group.contains("Ondeso")) {
     $kurs = "ecom"
 }elseif ($Group -eq "Trainers" -or "UG_Trainer"){
     $kurs = "traini"
+}else{
+    $kurs = "fi"
 }
 
 switch ($kurs) {
@@ -292,6 +305,7 @@ switch ($kurs) {
     }
 }
 
+Validate-License -AccSku $msolicense
 Add-ADGroupMember -Identity "ACL_VMM_Users" -Members $Group
 
 foreach ($usi in $users){
@@ -316,30 +330,38 @@ foreach ($usi in $users){
     $usi.Vorname = $usi.Vorname.replace("é","e")
     $usi.Vorname = $usi.Vorname.replace(" ","-")
 
+Write-Host "Passwort wird generiert"
 Generate-Password
 
 # On-premise creation
-Create-User -User $usi
+Write-Host "Benutzer wird erstellt"
+Create-User
 
 if ($kurs -eq "fi") {
 
+    Write-Host "Benutzerrolle wird angelegt"
     New-VMMRole -User $script:sam -art "f"
 
 }elseif ($kurs -eq "o"){
     
+    Write-Host "Benutzerrolle wird angelegt"
     New-VMMRole -User $script:sam -art "o"
 
 }
 
 # Azure/M365 creation
-New-MsolUser -UserPrincipalName $script:msolupn -FirstName $usi.vorname -LastName $usi.name -DisplayName $script:sam.Replace("."," ") -Password $script:pw -UsageLocation "DE" 
+
+Write-Host "Msol-Benutzer wird erstellt"
+New-MsolUser -UserPrincipalName $script:msolupn -FirstName $usi.vorname -LastName $usi.name -DisplayName $script:sam.replace("."," ") -Password $script:pw -UsageLocation "DE" 
 Set-MsolUserLicense -UserPrincipalName $script:msolupn -AddLicenses $msolicense
 sleep 10
 Get-Team | where DisplayName -eq $Group | Add-TeamUser -User $script:msolupn
 
+Write-Host "Testen der Credentials für $sam"
 if (Test-Credentials -eq "OK") {
     "$script:msolupn;$script:sam;$script:pwgen" >> "$dateipfad\Userlists\$Group.csv"
+    Write-Host "Okidoki"
 }else{
-    Write-Error -Message "Nutzerdaten von $sam konnten nicht validiert werden"
+    Write-Error -Message "Nutzerdaten von $sam konnten nicht validiert werden" -Category AuthenticationError
 }
 }
