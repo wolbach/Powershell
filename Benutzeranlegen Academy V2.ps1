@@ -278,7 +278,7 @@ switch ($kurs) {
         $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $upath = "OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $msolicense = "reseller-account:O365_BUSINESS_PREMIUM"
-        $Group = "DOM 365 Onboarding"
+        $Group = "DOM 365 Onboarding", "DOM 365", "Intune-USR"
         $laufzeit = 130
         Write-Host "DOM"
         
@@ -296,6 +296,7 @@ switch ($kurs) {
         $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $upath = "OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $msolicense = "reseller-account:INTUNE_A_D"
+        $Group += "Intune-USR"
         $laufzeit = 190
         Write-Host "PePe"
 
@@ -355,7 +356,16 @@ Write-Host "Msol-Benutzer wird erstellt"
 New-MsolUser -UserPrincipalName $script:msolupn -FirstName $usi.vorname -LastName $usi.name -DisplayName $script:sam.replace("."," ") -Password $script:pw -UsageLocation "DE" 
 Set-MsolUserLicense -UserPrincipalName $script:msolupn -AddLicenses $msolicense
 sleep 10
-Get-Team | where DisplayName -eq $Group | Add-TeamUser -User $script:msolupn
+#Get-Team | where DisplayName -eq $Group | Add-TeamUser -User $script:msolupn
+
+foreach ($Group in $Groups) {
+    $gruppie = Get-MsolGroup -SearchString $Group | select $JobGroupID
+    Add-TeamUser -GroupId $gruppie.GroupID -User $user -Role Member
+}
+
+#$Team = Get-Team | where DisplayName -eq $Group
+
+#$Team | Add-TeamUser -User $UPN
 
 Write-Host "Testen der Credentials für $sam"
 if (Test-Credentials -eq "OK") {
