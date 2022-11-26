@@ -213,7 +213,8 @@ catch {
 $Group = Read-Host "Gruppenname eingeben"
 
 $Grget = Get-ADGroup -Identity $Group
-if ($Grget.Name -eq $Group) {
+$msolGrget = Get-MsolGroup | where DisplayName -eq $Group
+if ($Grget.Name -eq $Group -or $msolGrget.DisplayName -eq $Group) {
     Write-Host "Gruppe existiert schon"
     $cont = Read-Host "Trotzdem fortfahren? y/n"
 }else {
@@ -277,7 +278,7 @@ switch ($kurs) {
      "dom"{
         $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $upath = "OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local"
-        $msolicense = "reseller-account:O365_BUSINESS_PREMIUM"
+        $msolicense = "reseller-account:O365_BUSINESS_PREMIUM", "reseller-account:INTUNE_A_D"
         $Group = "DOM 365 Onboarding", "DOM 365", "Intune-USR"
         $laufzeit = 130
         Write-Host "DOM"
@@ -295,7 +296,7 @@ switch ($kurs) {
 
         $grpath = "OU=Groups,OU=SGB3,OU=Academy,DC=academy,DC=local"
         $upath = "OU=User,OU=SGB3,OU=Academy,DC=academy,DC=local"
-        $msolicense = "reseller-account:INTUNE_A_D"
+        $msolicense = "reseller-account:INTUNE_A_D", "reseller-account:O365_BUSINESS_PREMIUM"
         $Group += "Intune-USR"
         $laufzeit = 190
         Write-Host "PePe"
@@ -358,10 +359,15 @@ Set-MsolUserLicense -UserPrincipalName $script:msolupn -AddLicenses $msolicense
 sleep 10
 #Get-Team | where DisplayName -eq $Group | Add-TeamUser -User $script:msolupn
 
-foreach ($Group in $Groups) {
+foreach ($Gruppe in $Group) {
     $gruppie = Get-MsolGroup -SearchString $Group | select $JobGroupID
     Add-TeamUser -GroupId $gruppie.GroupID -User $user -Role Member
 }
+
+<# foreach ($msolicense in $msolicense) {
+    Set-MsolUserLicense -UserPrincipalName $script:msolupn -AddLicenses 
+} #>
+
 
 #$Team = Get-Team | where DisplayName -eq $Group
 
