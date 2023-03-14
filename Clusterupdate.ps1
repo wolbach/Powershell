@@ -20,9 +20,9 @@ foreach ($clunode in $clunodes) {
     Download-WindowsUpdate -ComputerName $clunode -AcceptAll
     Install-WindowsUpdate -ComputerName $clunode -AcceptAll
     }
-        catch {
+    catch {
     Write-Host "Download oder Installation fehlgeschlagen"
-        }
+    }
     
 
     Resume-ClusterNode -TargetNode $clunode -Cluster $clu

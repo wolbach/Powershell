@@ -18,7 +18,7 @@
     Anpassung der zugewiesenen Gruppenmitgliedschaften
     Anredegedöhns anders machen
     Lizenzname überprüfen
-    Evtl implementierung automatischer Exchange Migration
+    Exchange Online Stuff
     evtl auslagerung in Funktionen
     #>
   

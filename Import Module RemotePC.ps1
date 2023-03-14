@@ -1,7 +1,7 @@
 # gssntlm needed
 
 [string]$userName = 'LG\adminmh'
-[string]$userPassword = ''
+[string]$userPassword = Read-Host -AsSecureString "Passwort eingeben"
 
 # Convert to SecureString
 [securestring]$secStringPassword = ConvertTo-SecureString $userPassword -AsPlainText -Force
