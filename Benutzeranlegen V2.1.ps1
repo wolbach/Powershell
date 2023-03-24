@@ -28,7 +28,7 @@ function New-VMMRole {
         New-SCUserRole -Name $User -UserRoleProfile "TenantAdmin" -JobGroup $JobGroupID
 
         sleep 5
-        $userRole =  Get-SCUserRole -VMMServer $vmm -Name $sam
+        $userRole =  Get-SCUserRole -VMMServer $vmm -Name $User
 
         $vmNetwork = New-SCVMNetwork -AutoCreateSubnet -Name $Switch1 -LogicalNetwork $logicalNetwork -Description $sam
         Set-SCVMNetwork -VMNetwork $vmNetwork -RunAsynchronously -Owner $TRKonto -UserRole $userRole
@@ -87,7 +87,7 @@ function Generate-Password {
 
     while ($valid -eq $false) {
         
-        $pwgen= -join ( (35..38) + (49..57) + (65..90) + (97..107) + (109..122) | Get-Random -Count 10 | Foreach-Object {[char]$_}) 
+        $pwgen= -join ( (35..35) + (37..38) + (49..57) + (65..90) + (97..107) + (109..122) | Get-Random -Count 10 | Foreach-Object {[char]$_})
 
         $numCriteriaMet = (
           (
@@ -114,10 +114,10 @@ function Create-User {
         $Vorname,
         $Nachname,
         $License,
-        $HasIntune
+        $HasIntune,
+        $Standort
     )
 
-    Write-Host "ok"
     if($Vorname.length + $Nachname.Length + 1 -ge 20){
         $Vorname = $Vorname.Remove(1)
         $Nachname = $Nachname
@@ -127,26 +127,24 @@ function Create-User {
         }
     } 
 
-    Write-Host "okok"
-    $user = @{SAM = $Vorname + "." + $Nachname;UPN = ($Vorname+"."+$Nachname)+"@academy.local";msolupn = ($Vorname+"."+$Nachname)+"@training.lug-ag.de";dname = $Vorname + " " + $Nachname}
+    $user = @{SAM = $Vorname + "." + $Nachname;UPN = ($Vorname+"."+$Nachname)+"@academy.local";msolupn = ($Vorname+"."+$Nachname)+"@training.lug-ag.de";dname = $Vorname + " " + $Nachname;Standort = $Standort}
 
     Write-Host "Nutzer OnPrem anlegen"
-    New-ADUser -AccountPassword $Password -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $user.UPN -DisplayName $user.dname -Name $user.dname -SurName $Nachname -GivenName $Vorname -Path $upath -SamAccountName $user.SAM -OtherAttributes @{accountExpires=$exp.AddDays($laufzeit);uid=$user.UPN}
+    New-ADUser -AccountPassword $Password -Enabled $true -ChangePasswordAtLogon $false -CannotChangePassword $true -PasswordNeverExpires $true -UserPrincipalName $user.UPN -DisplayName $user.dname -Name $user.dname -SurName $Nachname -GivenName $Vorname -Path $upath -SamAccountName $user.SAM -Office $user.Standort -OtherAttributes @{accountExpires=$exp.AddDays($laufzeit);uid=$user.UPN}
     Add-ADGroupMember -Identity $Group -Members $user.SAM
     Add-ADGroupMember -Identity "ACL_VMM_Users" -Members $Group
 
     # Azure/M365 creation
 
     Write-Host "Msol-Benutzer wird erstellt"
-    New-MsolUser -UserPrincipalName $user.msolupn -FirstName $Vorname -LastName $Nachname -DisplayName $user.dname -Password $Password -UsageLocation "DE" 
+    New-MsolUser -UserPrincipalName $user.msolupn -FirstName $Vorname -LastName $Nachname -DisplayName $user.dname -Password $Password -Office $user.Standort -UsageLocation "DE" 
     Set-MsolUserLicense -UserPrincipalName $user.msolupn -AddLicenses $License
     sleep 10
 
     Write-Host "Es wird versucht den User" $user.msolupn" zu pullen"
-    while ($null -eq $msolcheck <# -or $Error -in $msolcheck #>) {
+    while ($null -eq $msolcheck) {
         $msolcheck = Get-MsolUser -UserPrincipalName $user.msolupn
         sleep 10
-        # Falls das nicht hilft, muss nach der ObjektID des Benutzers in die Gruppe hinzugefügt werden
     }
 
     if ($null -ne $msolcheck) {
@@ -154,7 +152,7 @@ function Create-User {
             $gruppie = Get-MsolGroup -SearchString $Gruppe | select ObjectID
             $userid = Get-MsolUser -SearchString $user.msolupn | select objectid
             Write-Host "Hinzufügen des Benutzers"+ $user.msolupn +"zu der Gruppe " $gruppie.ObjectID.toString()
-                if ($HasIntune -eq 1) {
+            if ($HasIntune -eq 1) {
                 Add-MsolGroupMember -GroupObjectId "048426db-bc07-4bce-b2dd-38bd3ea8fed0" -GroupMemberType User -GroupMemberObjectId $userid.ObjectId
             }
     # Mit MSTeams Modul, da Mail-enabled Gruppen nicht über Msol-Cmdlets gemanaged werden können
@@ -277,17 +275,6 @@ if ($Grget.Name -eq $Group -or $msolGrget.DisplayName -eq $Group) {
     Write-Host "Gruppe ist frei"
 }
 
-switch ($cont) {
-    "n" { 
-        exit 
-    }
-    $null { 
-        New-ADGroup -DisplayName $Group -GroupScope Universal -Path $grpath -Name $Group 
-        New-Team -DisplayName $Group -Owner "admin@lug-ag.de" -Visibility Private
-    }
-    Default {}
-}
-
 if ($Group.contains("Ondeso")) {
     $kurs = "o"
 }elseif ($Group.contains("FI U")){
@@ -364,6 +351,17 @@ switch ($kurs) {
     }
 }
 
+switch ($cont) {
+    "n" { 
+        exit 
+    }
+    $null { 
+        New-ADGroup -DisplayName $Group -GroupScope Universal -Path $grpath -Name $Group 
+        New-Team -DisplayName $Group -Owner "admin@lug-ag.de" -Visibility Private
+    }
+    Default {}
+}
+
 Validate-License -AccSku $msolicense
 
 foreach ($usi in $users){
@@ -393,20 +391,20 @@ Write-Host "Passwort wird generiert"
 # On-premise creation
 Write-Host "Benutzer wird erstellt"
 $Pass = Generate-Password
-$user = Create-User -Password $Pass.SecString -Vorname $usi.Vorname -Nachname $usi.Name -License $msolicense -HasIntune $usi.Intune
+$user = Create-User -Password $Pass.SecString -Vorname $usi.Vorname -Nachname $usi.Name -License $msolicense -HasIntune $usi.Intune -Standort $usi.Standort
 
     if ($null -ne $vmmtype){
         Write-Host "Benutzerrolle wird angelegt"
         New-VMMRole -User $user.SAM -art $vmmtype
     }
-    }
 
     Write-Host "Testen der Credentials für" $user.SAM
         if ((Test-Credentials -SamAccountName $user.SAM -Password $Pass.SecString) -eq "OK") {
-            $user.msolupn+";"+$user.SAM+";"+$Pass.CurrString >> "$dateipfad\Userlists\$Group.csv"
+            $user.msolupn+";"+$Pass.CurrString+";"+$user.Standort >> "$dateipfad\Userlists\$Group.csv"
             Write-Host "Okidoki"
         }else{
             Write-Error -Message "Nutzerdaten von" +$user.SAM+ "konnten nicht validiert werden" -Category AuthenticationError
             Read-Host "Enter drücken um fortzufahren"
         }
+}
     
