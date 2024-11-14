@@ -17,7 +17,7 @@ foreach ($printer in $printers.Keys) {
     $Ports = Get-PrinterPort | where Name -match $PortCheck
 
     switch ($printer) {
-        "OG1" { $PrinterBaseName = "KLR-OG1_" }
+        "OG1" {$PrinterBaseName = "KLR-OG1_"}
         "OG2" {$PrinterBaseName = "KLR-OG2_"}
         "EG" {$PrinterBaseName = "KLR-EG_"}
         "Personal" {$PrinterBaseName = "KLR-Personal_"}
@@ -64,6 +64,7 @@ foreach ($printer in $printers.Keys) {
             }
             $PrinterName = $PrinterBaseName+$PrinterType
 
+            # Finally, add Printer to PC
             Add-Printer -PortName $PortName -DriverName $Driver.Name -Name $PrinterName
             if ($PrinterName -ccontains "Duplex") {
                 Set-PrintConfiguration -DuplexingMode TwoSidedLongEdge -PrinterName $PrinterName 

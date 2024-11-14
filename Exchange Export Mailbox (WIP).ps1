@@ -3,7 +3,7 @@ $ExchangeSess = New-PSSession -ConfigurationName Microsoft.Exchange -Credential 
 
 Import-PSSession $ExchangeSess -DisableNameChecking
 
-while (!($repeat)) {
+while ($repeat) {
     
 $MailboxName = Read-Host "Welche Mailbox soll exportiert werden?"
 if (!(Get-Mailbox -Identity $MailboxName)) {

@@ -1,0 +1,1 @@
+﻿C:\Downloads\setDPI.exe 175 2
