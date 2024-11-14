@@ -1,0 +1,20 @@
+{
+  "machines": {
+    "BACKUP-VM1": {
+      "FQDN": "BACKUP-VM1.in-klr.com",
+      "Jobs": ["Operations Daily Backup", "VPN Operations Daily Backup", "Domain Daily Backup"]
+    },
+    "BACKUP-VM2": {
+      "FQDN": "BACKUP-VM2.in-klr.com",
+      "Jobs" : ["Exchange Daily Backup", "T&R File Share Backup", "Terminalserver Weekly Backup"]
+    },
+    "BACKUP-VM3": {
+      "FQDN": "BACKUP-VM3.in-klr.com",
+      "Jobs" : ["Operations Monthly Backup", "Operations Weekly Backup", "Proxy Daily Backup", "RD Operations Daily Backup", "SQLHOST-KLR Backup"]
+    },
+    "BACKUP-FILE": {
+      "FQDN": "BACKUP-FILE.in-klr.com",
+      "Jobs" : ["FILE-SRV Daily Backup"]
+    }
+  }
+}
