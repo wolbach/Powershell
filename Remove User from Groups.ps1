@@ -20,7 +20,13 @@ foreach($userGroup in $UserGroups){
     Write-Host "($GroupCount)"$GroupName
     $GroupCount++
 }
-[array]$targetGroups = (Read-Host "Welche Gruppen sollen entfernt werden?").Split(",")
+
+[array]$targetGroups = (Read-Host "Welche Gruppen sollen entfernt werden?").Replace(" ", "").Split(",")
+
+<# $CheckEntry = (
+    ($targetGroup.Count -le 1),
+    ($targetGroup -ccontains [char])
+) #>
 
 foreach($targetGroup in $targetGroups){
     $removeGroup = $userGroups[$targetGroup].Name

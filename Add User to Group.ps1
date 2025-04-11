@@ -5,7 +5,7 @@
 Connect-IpPbx -ServerName "SWYX-SRV"
 
 $repeat = $true
-$UserName = "TestUser"
+$UserName = "MSP"
 
 while ($repeat) {
     
@@ -21,39 +21,39 @@ while ($repeat) {
     "
     switch ($Groups) {
         1 { 
-            $Group = @(
-                Name = "Hotline (logged off)",
-                Durchwahl = "5200",
+            $Group = @{
+                Name = "Hotline (logged off)";
+                Durchwahl = "5200";
                 Skin = "3iMedia Call Queue 2020 (right, bottom slim).cab"
-            )
+            }
         }
         2 {
-            $Group = @(
-                Name = "Kundenberatung (Gruppe) (logged off)",
-                Durchwahl = "5222",
+            $Group = @{
+                Name = "Kundenberatung (Gruppe) (logged off)";
+                Durchwahl = "5222";
                 Skin = "Kundenberatung.cab"
-            )
+            }
         }
         3 {
-            $Group = @(
-                Name = "Marketing",
-                Durchwahl = "150",
+            $Group = @{
+                Name = "Marketing";
+                Durchwahl = "150";
                 Skin = "skin SWyxIt! 2015 [3x].cab (Vorlage)"
-            )
+            }
         }
         4 {
-            $Group = @(
-                Name = "SU-AD",
-                Durchwahl = "",
+            $Group = @{
+                Name = "SU-AD";
+                Durchwahl = "";
                 Skin = "skin SWyxIt! 2015 [3x].cab (Vorlage)"
-            )
+            }
         }
         5 {
-            $Group = @(
-                Name = "Verwaltung (Gruppe) (logged off)",
-                Durchwahl = "5100",
+            $Group = @{
+                Name = "Verwaltung (Gruppe) (logged off)";
+                Durchwahl = "5100";
                 Skin = "Verwaltung.cab"
-            )
+            }
         }
         test {
             $Group = @{
