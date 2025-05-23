@@ -1,11 +1,22 @@
-$Folders = Get-ChildItem -Path "G:\"
-$User = "IN-KLR\DE" # Muss nach Bedarf abgeändert werden
-$UserAcc = Get-ADUser ($User.Replace("IN-KLR\","")) 
+$targetDepth = 0 #default value
+#Uncomment if its desired to have custom folder depth:
+#$targetDepth = Read-Host "Welche Verzeichnistiefe soll genutzt werden?"
+$Folders = Get-ChildItem -Path "G:\" -Depth $targetDepth | where Attributes -like "*Directory*"
+
+$CSVTemplate = 'C:\temp\Template Auswertung.csv'
+$User = "IN-KLR\FHA" # Muss nach Bedarf abgeï¿½ndert werden
+$kuerzel = $User.Replace("IN-KLR\","")
+$UserAcc = Get-ADUser $kuerzel
 $selectGroups = @()
+$allGroups = Get-ADGroup -Filter *
+$CSVPath = "C:\temp\$kuerzel Auswertung.csv"
+$Delimiter = "`t"
+$ErrorActionPreference = "SilentlyContinue"
 
-# TODO: auch in Unterordnern nach Berechtigung suchen; Aktuell werden diese garnicht angezeigt
+#Start-Transcript -LiteralPath "C:\temp\G Auswertung.txt" -Force
+Copy-Item -LiteralPath $CSVTemplate -Destination $CSVPath -Force
+$CSV = Get-Item -LiteralPath $CSVPath
 
-Start-Transcript -LiteralPath "C:\temp\G Auswertung.txt" -Force
 
 foreach($Group in $allGroups){
     $Members = Get-ADGroupMember -Identity $Group | select name
@@ -15,47 +26,116 @@ foreach($Group in $allGroups){
 }
 
 Write-Host "
-Auswertung für: $User
+Auswertung fuer: $User
 
 Direkter Nutzerzugriff wird ausgewertet...
 "
 
 foreach($folder in $Folders){
 
-    $fullPath = $Folders.DirectoryName[0] +":\"+ $folder.Name
-
-        $acl = Get-Acl $fullPath
+        $acl = Get-Acl $folder.FullName
 
         foreach($aacl in $acl.Access){
 
-        if($aacl.IdentityReference -eq $User){
-            Write-Host $folder.Name
-            break
-        }
+        $IdentityReference = $aacl.IdentityReference
+        $IdentityReference = $IdentityReference.ToString()
+        $Content = Get-Content -LiteralPath $CSVPath -Encoding utf8
+
+        if($kuerzel -eq ($IdentityReference.Replace("IN-KLR\",""))){
+            $splitPath = ($folder.FullName.Split('\'))
+            $depth = $splitPath.Count
+            $allFieldCount = 6
+
+            for ($i = 0; $i -lt $depth; $i++) {
+
+                $pathDepth = 3-$i
+                $pathDiff = $allFieldCount-3-$pathDepth
+                if($i -eq 3){
+                   $pathDiff = $pathDiff-1
+                }
+                $Output = $splitPath[$i]+($Delimiter*$i)+"X"+($Delimiter*$pathDiff)+($Delimiter*$pathDepth)+"X"
+                <#switch ($i) {
+                    0 { $Output = ""}
+                    1 { $Output = $splitPath[$i]+($Delimiter*$i)+"X"+($Delimiter*3)+"X"}
+                    2 { 
+                    
+                    }
+                    Default {}
+                }  #> 
+            }
+
+            if(($Output -notin $Content) -and ($folder -ne "G:")){
+                $Output >> $CSV
+                Write-Host $folder.Name " durch "  $IdentityReference
+                
+            }
+    }}
     }
-}
 
 Write-Host "
-Zugriffe über Nutzergruppen werden ausgewertet...
+Zugriffe Ã¼ber Nutzergruppen werden ausgewertet...
 "
 
 foreach($folder in $Folders){
 
-    $fullPath = $Folders.DirectoryName[0] +":\"+ $folder.Name
-
-        $acl = Get-Acl $fullPath
+        $acl = Get-Acl $folder.FullName
 
         foreach($aacl in $acl.Access){
 
-        $IdentitytReference = $aacl.IdentityReference
-        $IdentitytReference = $IdentitytReference.ToString()
+        $IdentityReference = $aacl.IdentityReference
+        $IdentityReference = $IdentityReference.ToString()
+        $Content = Get-Content -LiteralPath $CSVPath -Encoding utf8
 
-        if(($IdentitytReference.Replace("IN-KLR\","")) -in $selectGroups){
-            Write-Host $folder.Name " durch "  $IdentitytReference
-            break
+        if(($IdentityReference.Replace("IN-KLR\","")) -in $selectGroups){
+            #$Output = $folder.Name+",,"+$IdentityReference 
+            $splitPath = ($folder.FullName.Split('\'))
+            $depth = $splitPath.Count
+            $allFieldCount = 6
+
+            for ($i = 0; $i -lt $depth; $i++) {
+
+                $pathDepth = $depth-$i
+                $pathDiff = $allFieldCount-3-$pathDepth
+                if($i -eq 3){
+                   $pathDiff = $pathDiff-1
+                }else{
+                    $pathDiff++
+                }
+
+                if($splitPath[$i]-eq "G:"){
+                    #$Output = $splitPath[1]+($Delimiter*$i)+"X"+($Delimiter*$pathDiff)<#+($Delimiter*$pathDepth)#>+"X" 
+                    continue
+                }else{
+                    $Output = $splitPath[$i]+($Delimiter*$i)+"X"+($Delimiter*$pathDiff)+($Delimiter*$pathDepth)+"X"+$Delimiter+$IdentityReference
+                }
+                <#switch ($i) {
+                    0 { $Output = ""}
+                    1 { $Output = $splitPath[$i]+($Delimiter*$i)+"X"+($Delimiter*3)+"X"}
+                    2 { 
+                    
+                    }
+                    Default {}
+                }  #> 
+
+
+            if(($Output -notin $Content) -and ($folder.Name -ne "G:")){
+                $Output >> $CSV
+                Write-Host $folder.Name " durch "  $IdentityReference
+            }
+            
+         
         }
     }
-}
+}}
 
-Stop-Transcript
+Write-Host "`n `n Eine Tabellenï¿½bersicht kann hier: $CSVPath gefunden werden"
+
+<# foreach ($entry in $test) {
+    $IdRef = $entry.Access.IdentityReference
+    if ("IN-KLR\MAH" -in $IdRef){
+        Write-Host $entry.Path
+    }
+}
+ #>
+
 
