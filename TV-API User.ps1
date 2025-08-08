@@ -1,9 +1,11 @@
 $doPOST = $null
 $attributes = $null
+$bodyPOST = $null
+$bodyGET = $null
 
 <#
 TODO:
-1. Hinzufügen zu einer Gruppe funktioniert wohl nur mit eine ID, die nicht per API zu bekommen ist
+1. Hinzufügen zu einer Gruppe funktioniert wohl nur mit einer User-ID, die nicht per API zu bekommen ist
 2. Gruppenfreigaben einstellen
 3. Funktion "Serviceanfragen erhalten" soll deaktiviert sein wenn frisch erstellt
 #>
@@ -46,9 +48,9 @@ $groupsURI = "https://webapi.teamviewer.com/api/v1/groups"
 $usergroupsURI = "https://webapi.teamviewer.com/api/v1/usergroups"
 $ProxyURI = "http://proxy-srv.in-klr.com:8081"
 $userroleId = "60bd7bb6-191a-41da-8f5a-b28731a9e505"
-$passwort = "in-mah5701)" # Hier ändern
+$passwort = "in-mae5803)" # Hier ändern
 
-$attributes.requestBodyGET("t_mah@in-software.com", $null, "TEST MAH") # Hier ändern
+$attributes.requestBodyGET("mae@in-software.com", $null, "Markus Ernst") # Hier ändern
 $headers = @{ 
     Authorization = "Bearer $token"
 }
