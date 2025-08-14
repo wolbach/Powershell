@@ -1,4 +1,4 @@
-$recipientList = "RNE", "CKT", "GOP", "SKN", "VPA"
+$recipientList = "MAH"
 $subjectList = "SGU"
 
 Connect-IpPbx
@@ -16,11 +16,16 @@ foreach ($recipient in $recipientList) {
                 
             }
         
-        for ($i = 0; $i -lt $subjectNumbers; $i++) {
+        for ($i = 0; $i -lt $subjectNumbers.Count; $i++) {
             if ($subjectNumbers[$i] -notin $currSubjects) {
+                
+                $subjectInternalNumber = Get-IpPbxInternalNumber -InternalNumberId $subjectNumbers[$i]
+                $recipientInternalNumber = $recipientUser.InternalNumberEntryCollection[0].Number
+
                 $CollectionEntry.UserID = $recipientUser.UserID
                 $CollectionEntry.InternalNumberID = $subjectNumbers[$i]
                 $recipientUser.UserIntrusionNumberEntryCollection.Add($CollectionEntry)
+                Update-IpPbxUser -UserEntry $recipientUser
                 Write-Host "added "($subjectNumbers[$i])" to "+$recipientUser.Name
             }else {
                 continue
