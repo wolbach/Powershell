@@ -1,0 +1,9 @@
+C:\Users\mah\Documents\GitHub\Powershell\Selenium\bin\Release\net9.0\publish\Selenium.exe
+C:\Users\mah\Documents\GitHub\Powershell\Selenium\bin\Release\net9.0\publish\Selenium.dll
+C:\Users\mah\Documents\GitHub\Powershell\Selenium\bin\Release\net9.0\publish\Selenium.deps.json
+C:\Users\mah\Documents\GitHub\Powershell\Selenium\bin\Release\net9.0\publish\Selenium.runtimeconfig.json
+C:\Users\mah\Documents\GitHub\Powershell\Selenium\bin\Release\net9.0\publish\Selenium.pdb
+C:\Users\mah\Documents\GitHub\Powershell\Selenium\bin\Release\net9.0\publish\WebDriver.dll
+C:\Users\mah\Documents\GitHub\Powershell\Selenium\bin\Release\net9.0\publish\runtimes\linux\native\selenium-manager
+C:\Users\mah\Documents\GitHub\Powershell\Selenium\bin\Release\net9.0\publish\runtimes\osx\native\selenium-manager
+C:\Users\mah\Documents\GitHub\Powershell\Selenium\bin\Release\net9.0\publish\runtimes\win\native\selenium-manager.exe
