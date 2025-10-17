@@ -23,18 +23,29 @@ function Get-LADMGroupMember {
     if ($Group -is [array]) {
         $members = @{}
         foreach ($grp in $Group) {
-            Write-Host $grp
+            Write-Host $grp.DisplayName # Not tested!
+            # Get-ADGroupMember only applies when the local Admin Groups are administered through AD
             $members.Add($grp.samaccountname, @(Get-ADGroupMember $grp.samaccountname | select Name))
         }
         return $members
     }else {
-        Write-Host "nope"
+        throw 'Parameter "Group" is not of Tyoe Array' 
     }
     
 }
 
 #Start-Transcript -OutputDirectory "C:\temp"
-New-Item -Path "C:\temp" -Name "Export_LADM.csv" -ItemType File
+if(!(Test-Path "C:\temp\Export_LADM.csv")){
+    New-Item -Path "C:\temp" -Name "Export_LADM.csv" -ItemType File
+}else{
+    $fileprompt = Read-Host "File Export_LADM.csv already exists: Do you want to renew it? (y/n)"
+    if($fileprompt -eq "y"){
+        Remove-Item "C:\temp\Export_LADM.csv"
+        New-Item -Path "C:\temp" -Name "Export_LADM.csv" -ItemType File
+    }else{
+        continue
+    }
+}
 $Groups = Get-LADMGroup
 $membs = Get-LADMGroupMember -Group $Groups #| Export-Csv -Path "C:\temp\LADM_Export.csv" -Delimiter ";" -Encoding utf8
 foreach ($memb in ($membs.Keys)) {
@@ -46,4 +57,5 @@ foreach ($memb in ($membs.Keys)) {
     $memb+";"+$Values >> "C:\temp\Export_LADM.csv"
 }
 #Export-Excel -InputObject $membs -Path "C:\temp\Export.xlsx"
+
 #Stop-Transcript
