@@ -1,31 +1,41 @@
-## Class Definition
-class VMMServer {
-    [string]$VMMServerName
+function Restore-VMMCheckpoint {
+        [Parameter(mandatory=$true)]$VMMServer    
 
-    [int] RestoreCheckpoint() {
         try {
-            Get-SCVMMServer ($this.$VMMServerName)
+            Get-SCVMMServer $VMMServer
         }catch{
-            return "Failed to connect to VMM-Server - Aborting!"
+            Write-Host -ForeGroundColor Red "Failed to connect to VMM-Server - Aborting!"
+            
+            #return 0
         }
         
-        $Site = Read-Host "Pattern for Restoration-VMs"
+        [regex]$Site = Read-Host "Pattern for Restoration-VMs"
 
-        if ($Site -eq "a") {
-            $vms = Get-SCVirtualMachine | where Name -like "Ondeso Client A" 
-            $vms += Get-SCVirtualMachine | where Name -like "Ondeso Client A*"
+        
+            $vms = Get-SCVirtualMachine | where Name -like $Site 
+            <#
+                Only used when you want to check a different but similar pattern additionally;
+                Not required by default tho:
+                $vms += Get-SCVirtualMachine | where Name -like $Site
 
+            #>
+            
+        if ($Site -ne $null -or $Site -ne "") {
             foreach ($vm in $vms) {
-            Get-SCVirtualMachine | Get-SCVMCheckpoint | Restore-Checkpoint 
+                try {
+                    Get-SCVirtualMachine | Get-SCVMCheckpoint | Restore-Checkpoint 
 
-            echo "VM $vm bearbeitet"
-            sleep 5
+                    Write-Host -ForegroundColor Green "VM $vm bearbeitet"
+                    sleep 5
+                }
+                catch {
+                    Write-Host -ForegroundColor Red "Restoration of Checkpoint for machine $($vm.Name) was not successfull: ˋn $($error[-1])"
+                }
             }
         
         } else {
-            echo "Fehlerhafte Eingabe"
+            Write-Host -ForeGroundColor Red 'Fehlerhafte Eingabe: $vm was empty'
             return 0
         }
         return 1
     }
-}
