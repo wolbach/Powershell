@@ -1,8 +1,14 @@
 function Check-ModuleRequirements {
     
     # TODO: Add a module manifest: https://learn.microsoft.com/en-us/powershell/scripting/learn/ps101/10-script-modules?view=powershell-7.5
-    
+    $moduleManifestParams = @{
+        FunctionsToExport = 
+        
+    }
 }
+
+# ! Make sure to import the manifest, not the psm directly !
+
 function Restore-VMMCheckpoint {
         [CmdletBinding()]
         [Parameter(mandatory=$true)]$VMMServer    
@@ -102,6 +108,7 @@ foreach ($user in $users) {
     $userrole = Get-SCUserRole -Name $user.SamAccountName
     $ACADuser = "$($Domain)\"+$user.SamAccountName
     $JobGroupID = [Guid]::NewGuid().ToString()
+    Write-Host $userrole $ACADuser $JobGroupID
     Get-SCUserRole -Name $RoleName  | Set-SCUserRole -AddMember $ACADuser -AddScope $Cloud -Permission @("AllowLocalAdmin", "RemoteConnect", "Start") -ShowPROTips $false -VMNetworkMaximumPerUser "2" -VMNetworkMaximum "2"
     Write-Host -ForegroundColor Green ""
 }
