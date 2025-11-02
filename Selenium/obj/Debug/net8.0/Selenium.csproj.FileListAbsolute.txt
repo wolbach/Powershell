@@ -1,0 +1,13 @@
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\bin\Debug\net8.0\Selenium.deps.json
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\bin\Debug\net8.0\Selenium.dll
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\bin\Debug\net8.0\Selenium.pdb
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\obj\Debug\net8.0\Selenium.csproj.AssemblyReference.cache
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\obj\Debug\net8.0\Selenium.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\obj\Debug\net8.0\Selenium.AssemblyInfoInputs.cache
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\obj\Debug\net8.0\Selenium.AssemblyInfo.cs
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\obj\Debug\net8.0\Selenium.csproj.CoreCompileInputs.cache
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\obj\Debug\net8.0\Selenium.sourcelink.json
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\obj\Debug\net8.0\Selenium.dll
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\obj\Debug\net8.0\refint\Selenium.dll
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\obj\Debug\net8.0\Selenium.pdb
+C:\Users\MH\Documents\GitHub\Powershell\Selenium\obj\Debug\net8.0\ref\Selenium.dll

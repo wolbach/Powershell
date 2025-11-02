@@ -1,8 +1,14 @@
 {
   "version": 2,
+<<<<<<< Updated upstream
   "dgSpecHash": "1OBKzUNnnLo=",
   "success": true,
   "projectFilePath": "C:\\Users\\MH\\Documents\\PowerShell\\Powershell\\Selenium\\Selenium.csproj",
+=======
+  "dgSpecHash": "E6cIRYuMcDI=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\MH\\Documents\\GitHub\\Powershell\\Selenium\\Selenium.csproj",
+>>>>>>> Stashed changes
   "expectedPackageFiles": [
     "C:\\Users\\MH\\.nuget\\packages\\selenium.webdriver\\4.35.0\\selenium.webdriver.4.35.0.nupkg.sha512"
   ],
