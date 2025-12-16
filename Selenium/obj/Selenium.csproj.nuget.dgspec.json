@@ -1,19 +1,6 @@
 {
   "format": 1,
   "restore": {
-<<<<<<< Updated upstream
-    "C:\\Users\\MH\\Documents\\PowerShell\\Powershell\\Selenium\\Selenium.csproj": {}
-  },
-  "projects": {
-    "C:\\Users\\MH\\Documents\\PowerShell\\Powershell\\Selenium\\Selenium.csproj": {
-      "version": "1.0.0",
-      "restore": {
-        "projectUniqueName": "C:\\Users\\MH\\Documents\\PowerShell\\Powershell\\Selenium\\Selenium.csproj",
-        "projectName": "Selenium",
-        "projectPath": "C:\\Users\\MH\\Documents\\PowerShell\\Powershell\\Selenium\\Selenium.csproj",
-        "packagesPath": "C:\\Users\\MH\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\MH\\Documents\\PowerShell\\Powershell\\Selenium\\obj\\",
-=======
     "C:\\Users\\MH\\Documents\\GitHub\\Powershell\\Selenium\\Selenium.csproj": {}
   },
   "projects": {
@@ -25,7 +12,6 @@
         "projectPath": "C:\\Users\\MH\\Documents\\GitHub\\Powershell\\Selenium\\Selenium.csproj",
         "packagesPath": "C:\\Users\\MH\\.nuget\\packages\\",
         "outputPath": "C:\\Users\\MH\\Documents\\GitHub\\Powershell\\Selenium\\obj\\",
->>>>>>> Stashed changes
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

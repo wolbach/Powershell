@@ -1,9 +1,9 @@
 function Check-ModuleRequirements {
-    
+
     # TODO: Add a module manifest: https://learn.microsoft.com/en-us/powershell/scripting/learn/ps101/10-script-modules?view=powershell-7.5
     $moduleManifestParams = @{
-        FunctionsToExport = 
-        
+        FunctionsToExport =
+
     }
 }
 
@@ -11,31 +11,34 @@ function Check-ModuleRequirements {
 
 function Restore-VMMCheckpoint {
         [CmdletBinding()]
-        [Parameter(mandatory=$true)]$VMMServer    
+        [Parameter(mandatory=$true)]$VMMServer
+        [Parameter(Mandatory=$false)][regex]$searchPattern
 
         try {
             Get-SCVMMServer $VMMServer
         }catch{
             Write-Host -ForeGroundColor Red "Failed to connect to VMM-Server - Aborting!"
-            
+
             #return 0
         }
-        
-        [regex]$Site = Read-Host "Pattern for Restoration-VMs"
 
-        
-            $vms = Get-SCVirtualMachine | where Name -like $Site 
+        if($null -eq $searchPattern){
+            $searchPattern = Read-Host "Pattern for Restoration-VMs"
+        }
+
+
+            $vms = Get-SCVirtualMachine | where Name -like $searchPattern
             <#
                 Only used when you want to check a different but similar pattern additionally;
                 Not required by default tho:
                 $vms += Get-SCVirtualMachine | where Name -like $Site
 
             #>
-            
+
         if ($Site -ne $null -or $Site -ne "") {
             foreach ($vm in $vms) {
                 try {
-                    Get-SCVirtualMachine | Get-SCVMCheckpoint | Restore-Checkpoint 
+                    Get-SCVirtualMachine | Get-SCVMCheckpoint | Restore-Checkpoint
 
                     Write-Host -ForegroundColor Green "VM $vm bearbeitet"
                     sleep 5
@@ -44,7 +47,7 @@ function Restore-VMMCheckpoint {
                     Write-Host -ForegroundColor Red "Restoration of Checkpoint for machine $($vm.Name) was not successfull: ˋn $($error[-1])"
                 }
             }
-        
+
         } else {
             Write-Host -ForeGroundColor Red 'Fehlerhafte Eingabe: $vm was empty'
             return 0
@@ -55,33 +58,43 @@ function Restore-VMMCheckpoint {
 function New-VMMCheckpoint {
     [CmdletBinding()]
     [Parameter(mandatory=$true)]$VMMServer
-    
+    [Parameter(Mandatory=$false)][switch]$HyperVMode
+    [Parameter(Mandatory=$false)][regex]$searchPattern
+
 try {
-    Get-SCVMMServer $VMMServer    
+    Get-SCVMMServer $VMMServer
 }
 catch {
     Write-Host -ForeGroundColor Red "Failed to connect to VMM-Server - Aborting!"
 }
 
+if($null -eq $searchPattern){
+    [regex]$searchPattern = Read-Host "Please input a search Pattern"
+}
+switch $HyperVMode {
+    $_ -eq $true {
+        $vms = Get-VM -Filter * | where Name -match $searchPattern
+    }
+    default {
 
-[regex]$Site = Read-Host "Please input a search Pattern"
+         $vms = Get-SCVirtualMachine | where Name -match $searchPattern
 
-if ($Site -ne $null -or $Site -ne "") {
-    $vms = Get-SCVirtualMachine | where Name -like $Site 
-    $vms += Get-SCVirtualMachine | where Name -like $Site
+        foreach ($vm in $vms) {
+            try{
+                $vm | Get-SCVMCheckpoint | Remove-SCVMCheckpoint
+                Write-Host -ForeGroundColor Green "Removed Checkpoint for $($vm.Name)"
 
-    foreach ($vm in $vms) {
-       Get-SCVirtualMachine | Get-SCVMCheckpoint | Remove-SCVMCheckpoint
-    
-       Get-SCVirtualMachine | Get-SCVMCheckpoint | New-SCVMCheckpoint 
-
-       Write-Host -ForegroundColor Red "Restoration of Checkpoint for machine $($vm.Name) was not successfull: ˋn $($error[-1])"
-       sleep 5
-    }else {
-    Write-Host -ForeGroundColor Red 'Fehlerhafte Eingabe: $vm was empty'
-    return 1
+                $vm | Get-SCVMCheckpoint | New-SCVMCheckpoint
+                Write-Host -ForeGroundColor Green "Created new Checkpoint for $($vm.Name)"
+            }
+            catch{
+                Write-Host -ForegroundColor Red "Restoration of Checkpoint for machine $($vm.Name) was not successfull: ˋn $($error[-1])"
+                continue
+            }
+        }
     }
 }
+
 }
 
 function Add-VMMUserRole {
@@ -104,7 +117,7 @@ if (!$PSBoundParameters.ContainsKey("Domain")) {
 }
 
 foreach ($user in $users) {
-       
+
     $userrole = Get-SCUserRole -Name $user.SamAccountName
     $ACADuser = "$($Domain)\"+$user.SamAccountName
     $JobGroupID = [Guid]::NewGuid().ToString()
